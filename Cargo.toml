@@ -1,0 +1,13 @@
+[package]
+
+name = "rjs_jit"
+version = "0.0.1"
+authors = [ "Pieter van Ginkel <pvginkel@gmail.com>" ]
+
+[[bin]]
+
+name = "rjs_jit"
+
+[lib]
+
+name = "rjs_jit"
