@@ -292,38 +292,38 @@ fn x86_modrm_rm(modrm: i32) -> i32 {
 }
 
 fn x86_address_byte(inst: &mut Emit, m: u8, o: u8, r: u8) {
-    inst.emit(((((m)&0x03)<<6)|(((o)&0x07)<<3)|(((r)&0x07))));
+    inst.push(((((m)&0x03)<<6)|(((o)&0x07)<<3)|(((r)&0x07))));
 }
 
 fn x86_imm_emit32(inst: &mut Emit, imm: i32) {
     let imb = unsafe { transmute::<_, [u8; 4]>(imm) };
-    inst.emit(imb [0]);
-    inst.emit(imb [1]);
-    inst.emit(imb [2]);
-    inst.emit(imb [3]);
+    inst.push(imb [0]);
+    inst.push(imb [1]);
+    inst.push(imb [2]);
+    inst.push(imb [3]);
 }
 
 fn x86_imm_emit32_at(inst: &mut Emit, pos: i32, imm: i32) {
     let imb = unsafe { transmute::<_, [u8; 4]>(imm) };
-    inst.emit_at(imb [0], pos);
-    inst.emit_at(imb [1], pos + 1);
-    inst.emit_at(imb [2], pos + 2);
-    inst.emit_at(imb [3], pos + 3);
+    inst.set_at(imb [0], pos);
+    inst.set_at(imb [1], pos + 1);
+    inst.set_at(imb [2], pos + 2);
+    inst.set_at(imb [3], pos + 3);
 }
 
 // TODO: inst is the offset into the stream!
 fn x86_imm_emit16(inst: &mut Emit, imm: i32) {
     let imb = unsafe { transmute::<_, [u8; 2]>(imm as i16) };
-    inst.emit(imb [0]);
-    inst.emit(imb [1]);
+    inst.push(imb [0]);
+    inst.push(imb [1]);
 }
 
 fn x86_imm_emit8(inst: &mut Emit, imm: i32) {
-    inst.emit(imm as u8);
+    inst.push(imm as u8);
 }
 
 fn x86_imm_emit8_at(inst: &mut Emit, pos: i32, imm: i32) {
-    inst.emit_at(imm as u8, pos);
+    inst.set_at(imm as u8, pos);
 }
 
 fn x86_is_imm8(imm: i32) -> bool {
@@ -453,19 +453,19 @@ fn x86_patch(inst: &mut Emit, target: i32) {
 }
 
 fn x86_breakpoint(inst: &mut Emit) {
-    inst.emit(0xcc);
+    inst.push(0xcc);
 }
 
 fn x86_cld(inst: &mut Emit) {
-    inst.emit(0xfc);
+    inst.push(0xfc);
 }
 
 fn x86_stosb(inst: &mut Emit) {
-    inst.emit(0xaa);
+    inst.push(0xaa);
 }
 
 fn x86_stosl(inst: &mut Emit) {
-    inst.emit(0xab);
+    inst.push(0xab);
 }
 
 fn x86_stosd(inst: &mut Emit) {
@@ -473,11 +473,11 @@ fn x86_stosd(inst: &mut Emit) {
 }
 
 fn x86_movsb(inst: &mut Emit) {
-    inst.emit(0xa4);
+    inst.push(0xa4);
 }
 
 fn x86_movsl(inst: &mut Emit) {
-    inst.emit(0xa5);
+    inst.push(0xa5);
 }
 
 fn x86_movsd(inst: &mut Emit) {
@@ -485,181 +485,181 @@ fn x86_movsd(inst: &mut Emit) {
 }
 
 fn x86_prefix(inst: &mut Emit, p: u8) {
-    inst.emit( (p));
+    inst.push( (p));
 }
 
 fn x86_rdtsc(inst: &mut Emit) {
-    inst.emit(0x0f);
-    inst.emit(0x31);
+    inst.push(0x0f);
+    inst.push(0x31);
 }
 
 fn x86_cmpxchg_reg_reg(inst: &mut Emit, dreg: u8, reg: u8) {
-    inst.emit(0x0f);
-    inst.emit(0xb1);
+    inst.push(0x0f);
+    inst.push(0xb1);
     x86_reg_emit ((inst), (reg), (dreg));
 }
 
 fn x86_cmpxchg_mem_reg(inst: &mut Emit, mem: i32, reg: u8) {
-    inst.emit(0x0f);
-    inst.emit(0xb1);
+    inst.push(0x0f);
+    inst.push(0xb1);
     x86_mem_emit ((inst), (reg), (mem));
 }
 
 fn x86_cmpxchg_membase_reg(inst: &mut Emit, basereg: u8, disp: i32, reg: u8) {
-    inst.emit(0x0f);
-    inst.emit(0xb1);
+    inst.push(0x0f);
+    inst.push(0xb1);
     x86_membase_emit ((inst), (reg), (basereg), (disp));
 }
 
 fn x86_xchg_reg_reg(inst: &mut Emit, dreg: u8, reg: u8, size: i32) {
     if ((size) == 1){
-        inst.emit(0x86);
+        inst.push(0x86);
     } else {
-        inst.emit(0x87);
+        inst.push(0x87);
     }
     x86_reg_emit ((inst), (reg), (dreg));
 }
 
 fn x86_xchg_mem_reg(inst: &mut Emit, mem: i32, reg: u8, size: i32) {
     if ((size) == 1) {
-        inst.emit(0x86);
+        inst.push(0x86);
     } else {
-        inst.emit(0x87);
+        inst.push(0x87);
     }
     x86_mem_emit ((inst), (reg), (mem));
 }
 
 fn x86_xchg_membase_reg(inst: &mut Emit, basereg: u8, disp: i32, reg: u8, size: i32) {
     if ((size) == 1) {
-        inst.emit(0x86);
+        inst.push(0x86);
     } else {
-        inst.emit(0x87);
+        inst.push(0x87);
     }
     x86_membase_emit ((inst), (reg), (basereg), (disp));
 }
 
 fn x86_xadd_reg_reg(inst: &mut Emit, dreg: u8, reg: u8, size: i32) {
-    inst.emit(0x0F);
+    inst.push(0x0F);
     if ((size) == 1) {
-        inst.emit(0xC0);
+        inst.push(0xC0);
     } else {
-        inst.emit(0xC1);
+        inst.push(0xC1);
     }
     x86_reg_emit ((inst), (reg), (dreg));
 }
 
 fn x86_xadd_mem_reg(inst: &mut Emit, mem: i32, reg: u8, size: i32) {
-    inst.emit(0x0F);
+    inst.push(0x0F);
     if ((size) == 1) {
-        inst.emit(0xC0);
+        inst.push(0xC0);
     } else {
-        inst.emit(0xC1);
+        inst.push(0xC1);
     }
     x86_mem_emit ((inst), (reg), (mem));
 }
 
 fn x86_xadd_membase_reg(inst: &mut Emit, basereg: u8, disp: i32, reg: u8, size: i32) {
-    inst.emit(0x0F);
+    inst.push(0x0F);
     if ((size) == 1) {
-        inst.emit(0xC0);
+        inst.push(0xC0);
     } else {
-        inst.emit(0xC1);
+        inst.push(0xC1);
     }
     x86_membase_emit ((inst), (reg), (basereg), (disp));
 }
 
 fn x86_inc_mem(inst: &mut Emit, mem: i32) {
-    inst.emit(0xff);
+    inst.push(0xff);
     x86_mem_emit ((inst), 0, (mem));
 }
 
 fn x86_inc_membase(inst: &mut Emit, basereg: u8, disp: i32) {
-    inst.emit(0xff);
+    inst.push(0xff);
     x86_membase_emit ((inst), 0, (basereg), (disp));
 }
 
 fn x86_inc_reg(inst: &mut Emit, reg: u8) {
-    inst.emit(0x40 + (reg));
+    inst.push(0x40 + (reg));
 }
 
 fn x86_dec_mem(inst: &mut Emit, mem: i32) {
-    inst.emit(0xff);
+    inst.push(0xff);
     x86_mem_emit ((inst), 1, (mem));
 }
 
 fn x86_dec_membase(inst: &mut Emit, basereg: u8, disp: i32) {
-    inst.emit(0xff);
+    inst.push(0xff);
     x86_membase_emit ((inst), 1, (basereg), (disp));
 }
 
 fn x86_dec_reg(inst: &mut Emit, reg: u8) {
-    inst.emit(0x48 + (reg));
+    inst.push(0x48 + (reg));
 }
 
 fn x86_not_mem(inst: &mut Emit, mem: i32) {
-    inst.emit(0xf7);
+    inst.push(0xf7);
     x86_mem_emit ((inst), 2, (mem));
 }
 
 fn x86_not_membase(inst: &mut Emit, basereg: u8, disp: i32) {
-    inst.emit(0xf7);
+    inst.push(0xf7);
     x86_membase_emit ((inst), 2, (basereg), (disp));
 }
 
 fn x86_not_reg(inst: &mut Emit, reg: u8) {
-    inst.emit(0xf7);
+    inst.push(0xf7);
     x86_reg_emit ((inst), 2, (reg));
 }
 
 fn x86_neg_mem(inst: &mut Emit, mem: i32) {
-    inst.emit(0xf7);
+    inst.push(0xf7);
     x86_mem_emit ((inst), 3, (mem));
 }
 
 fn x86_neg_membase(inst: &mut Emit, basereg: u8, disp: i32) {
-    inst.emit(0xf7);
+    inst.push(0xf7);
     x86_membase_emit ((inst), 3, (basereg), (disp));
 }
 
 fn x86_neg_reg(inst: &mut Emit, reg: u8) {
-    inst.emit(0xf7);
+    inst.push(0xf7);
     x86_reg_emit ((inst), 3, (reg));
 }
 
 fn x86_nop(inst: &mut Emit) {
-    inst.emit(0x90);
+    inst.push(0x90);
 }
 
 fn x86_alu_reg_imm(inst: &mut Emit, opc: u8, reg: u8, imm: i32) {
     if ((reg) == X86_EAX) {
-        inst.emit((((opc)) << 3) + 5);
+        inst.push((((opc)) << 3) + 5);
         x86_imm_emit32 ((inst), (imm));
         return;
     }
     if (x86_is_imm8((imm))) {
-        inst.emit(0x83);
+        inst.push(0x83);
         x86_reg_emit ((inst), (opc), (reg));
         x86_imm_emit8 ((inst), (imm));
     } else {
-        inst.emit(0x81);
+        inst.push(0x81);
         x86_reg_emit ((inst), (opc), (reg));
         x86_imm_emit32 ((inst), (imm));
     }
 }
 
 fn x86_alu_reg16_imm(inst: &mut Emit, opc: u8, reg: u8, imm: i32) {
-    inst.emit(0x66);
+    inst.push(0x66);
     if ((reg) == X86_EAX) {
-        inst.emit((((opc)) << 3) + 5);
+        inst.push((((opc)) << 3) + 5);
         x86_imm_emit16 ((inst), (imm));
         return;
     }
     if (x86_is_imm8((imm))) {
-        inst.emit(0x83);
+        inst.push(0x83);
         x86_reg_emit ((inst), (opc), (reg));
         x86_imm_emit8 ((inst), (imm));
     } else {
-        inst.emit(0x81);
+        inst.push(0x81);
         x86_reg_emit ((inst), (opc), (reg));
         x86_imm_emit16 ((inst), (imm));
     }
@@ -667,11 +667,11 @@ fn x86_alu_reg16_imm(inst: &mut Emit, opc: u8, reg: u8, imm: i32) {
 
 fn x86_alu_mem_imm(inst: &mut Emit, opc: u8, mem: i32, imm: i32) {
     if (x86_is_imm8((imm))) {
-        inst.emit(0x83);
+        inst.push(0x83);
         x86_mem_emit ((inst), (opc), (mem));
         x86_imm_emit8 ((inst), (imm));
     } else {
-        inst.emit(0x81);
+        inst.push(0x81);
         x86_mem_emit ((inst), (opc), (mem));
         x86_imm_emit32 ((inst), (imm));
     }
@@ -679,34 +679,34 @@ fn x86_alu_mem_imm(inst: &mut Emit, opc: u8, mem: i32, imm: i32) {
 
 fn x86_alu_membase_imm(inst: &mut Emit, opc: u8, basereg: u8, disp: i32, imm: i32) {
     if (x86_is_imm8((imm))) {
-        inst.emit(0x83);
+        inst.push(0x83);
         x86_membase_emit ((inst), (opc), (basereg), (disp));
         x86_imm_emit8 ((inst), (imm));
     } else {
-        inst.emit(0x81);
+        inst.push(0x81);
         x86_membase_emit ((inst), (opc), (basereg), (disp));
         x86_imm_emit32 ((inst), (imm));
     }
 }
 
 fn x86_alu_membase8_imm(inst: &mut Emit, opc: u8, basereg: u8, disp: i32, imm: i32) {
-    inst.emit(0x80);
+    inst.push(0x80);
     x86_membase_emit ((inst), (opc), (basereg), (disp));
     x86_imm_emit8 ((inst), (imm));
 }
 
 fn x86_alu_mem_reg(inst: &mut Emit, opc: u8, mem: i32, reg: u8) {
-    inst.emit((((opc)) << 3) + 1);
+    inst.push((((opc)) << 3) + 1);
     x86_mem_emit ((inst), (reg), (mem));
 }
 
 fn x86_alu_membase_reg(inst: &mut Emit, opc: u8, basereg: u8, disp: i32, reg: u8) {
-    inst.emit((((opc)) << 3) + 1);
+    inst.push((((opc)) << 3) + 1);
     x86_membase_emit ((inst), (reg), (basereg), (disp));
 }
 
 fn x86_alu_reg_reg(inst: &mut Emit, opc: u8, dreg: u8, reg: u8) {
-    inst.emit((((opc)) << 3) + 3);
+    inst.push((((opc)) << 3) + 3);
     x86_reg_emit ((inst), (dreg), (reg));
 }
 
@@ -720,63 +720,63 @@ fn x86_alu_reg_reg(inst: &mut Emit, opc: u8, dreg: u8, reg: u8) {
  * For example: dreg = X86_EAX, is_dreg_h = TRUE -> use AH
  */
 fn x86_alu_reg8_reg8(inst: &mut Emit, opc: u8, dreg: u8, reg: u8, is_dreg_h: bool, is_reg_h: bool) {
-    inst.emit((((opc)) << 3) + 2);
+    inst.push((((opc)) << 3) + 2);
     x86_reg8_emit ((inst), (dreg), (reg), (is_dreg_h), (is_reg_h));
 }
 
 fn x86_alu_reg_mem(inst: &mut Emit, opc: u8, reg: u8, mem: i32) {
-    inst.emit((((opc)) << 3) + 3);
+    inst.push((((opc)) << 3) + 3);
     x86_mem_emit ((inst), (reg), (mem));
 }
 
 fn x86_alu_reg_membase(inst: &mut Emit, opc: u8, reg: u8, basereg: u8, disp: i32) {
-    inst.emit((((opc)) << 3) + 3);
+    inst.push((((opc)) << 3) + 3);
     x86_membase_emit ((inst), (reg), (basereg), (disp));
 }
 
 fn x86_test_reg_imm(inst: &mut Emit, reg: u8, imm: i32) {
     if ((reg) == X86_EAX) {
-        inst.emit(0xa9);
+        inst.push(0xa9);
     } else {
-        inst.emit(0xf7);
+        inst.push(0xf7);
         x86_reg_emit ((inst), 0, (reg));
     }
     x86_imm_emit32 ((inst), (imm));
 }
 
 fn x86_test_mem_imm(inst: &mut Emit, mem: i32, imm: i32) {
-    inst.emit(0xf7);
+    inst.push(0xf7);
     x86_mem_emit ((inst), 0, (mem));
     x86_imm_emit32 ((inst), (imm));
 }
 
 fn x86_test_membase_imm(inst: &mut Emit, basereg: u8, disp: i32, imm: i32) {
-    inst.emit(0xf7);
+    inst.push(0xf7);
     x86_membase_emit ((inst), 0, (basereg), (disp));
     x86_imm_emit32 ((inst), (imm));
 }
 
 fn x86_test_reg_reg(inst: &mut Emit, dreg: u8, reg: u8) {
-    inst.emit(0x85);
+    inst.push(0x85);
     x86_reg_emit ((inst), (reg), (dreg));
 }
 
 fn x86_test_mem_reg(inst: &mut Emit, mem: i32, reg: u8) {
-    inst.emit(0x85);
+    inst.push(0x85);
     x86_mem_emit ((inst), (reg), (mem));
 }
 
 fn x86_test_membase_reg(inst: &mut Emit, basereg: u8, disp: i32, reg: u8) {
-    inst.emit(0x85);
+    inst.push(0x85);
     x86_membase_emit ((inst), (reg), (basereg), (disp));
 }
 
 fn x86_shift_reg_imm(inst: &mut Emit, opc: u8, reg: u8, imm: i32) {
     if ((imm) == 1) {
-        inst.emit(0xd1);
+        inst.push(0xd1);
         x86_reg_emit ((inst), (opc), (reg));
     } else {
-        inst.emit(0xc1);
+        inst.push(0xc1);
         x86_reg_emit ((inst), (opc), (reg));
         x86_imm_emit8 ((inst), (imm));
     }
@@ -784,10 +784,10 @@ fn x86_shift_reg_imm(inst: &mut Emit, opc: u8, reg: u8, imm: i32) {
 
 fn x86_shift_mem_imm(inst: &mut Emit, opc: u8, mem: i32, imm: i32) {
     if ((imm) == 1) {
-        inst.emit(0xd1);
+        inst.push(0xd1);
         x86_mem_emit ((inst), (opc), (mem));
     } else {
-        inst.emit(0xc1);
+        inst.push(0xc1);
         x86_mem_emit ((inst), (opc), (mem));
         x86_imm_emit8 ((inst), (imm));
     }
@@ -795,27 +795,27 @@ fn x86_shift_mem_imm(inst: &mut Emit, opc: u8, mem: i32, imm: i32) {
 
 fn x86_shift_membase_imm(inst: &mut Emit, opc: u8, basereg: u8, disp: i32, imm: i32) {
     if ((imm) == 1) {
-        inst.emit(0xd1);
+        inst.push(0xd1);
         x86_membase_emit ((inst), (opc), (basereg), (disp));
     } else {
-        inst.emit(0xc1);
+        inst.push(0xc1);
         x86_membase_emit ((inst), (opc), (basereg), (disp));
         x86_imm_emit8 ((inst), (imm));
     }
 }
 
 fn x86_shift_reg(inst: &mut Emit, opc: u8, reg: u8) {
-    inst.emit(0xd3);
+    inst.push(0xd3);
     x86_reg_emit ((inst), (opc), (reg));
 }
 
 fn x86_shift_mem(inst: &mut Emit, opc: u8, mem: i32) {
-    inst.emit(0xd3);
+    inst.push(0xd3);
     x86_mem_emit ((inst), (opc), (mem));
 }
 
 fn x86_shift_membase(inst: &mut Emit, opc: u8, basereg: u8, disp: i32) {
-    inst.emit(0xd3);
+    inst.push(0xd3);
     x86_membase_emit ((inst), (opc), (basereg), (disp));
 }
 
@@ -824,27 +824,27 @@ fn x86_shift_membase(inst: &mut Emit, opc: u8, basereg: u8, disp: i32) {
  */
 
 fn x86_shrd_reg(inst: &mut Emit, dreg: u8, reg: u8) {
-    inst.emit(0x0f);
-    inst.emit(0xad);
+    inst.push(0x0f);
+    inst.push(0xad);
     x86_reg_emit ((inst), (reg), (dreg));
 }
 
 fn x86_shrd_reg_imm(inst: &mut Emit, dreg: u8, reg: u8, shamt: i32) {
-    inst.emit(0x0f);
-    inst.emit(0xac);
+    inst.push(0x0f);
+    inst.push(0xac);
     x86_reg_emit ((inst), (reg), (dreg));
     x86_imm_emit8 ((inst), (shamt));
 }
 
 fn x86_shld_reg(inst: &mut Emit, dreg: u8, reg: u8) {
-    inst.emit(0x0f);
-    inst.emit(0xa5);
+    inst.push(0x0f);
+    inst.push(0xa5);
     x86_reg_emit ((inst), (reg), (dreg));
 }
 
 fn x86_shld_reg_imm(inst: &mut Emit, dreg: u8, reg: u8, shamt: i32) {
-    inst.emit(0x0f);
-    inst.emit(0xa4);
+    inst.push(0x0f);
+    inst.push(0xa4);
     x86_reg_emit ((inst), (reg), (dreg));
     x86_imm_emit8 ((inst), (shamt));
 }
@@ -853,17 +853,17 @@ fn x86_shld_reg_imm(inst: &mut Emit, dreg: u8, reg: u8, shamt: i32) {
  * EDX:EAX = EAX * rm
  */
 fn x86_mul_reg(inst: &mut Emit, reg: u8, is_signed: bool) {
-    inst.emit(0xf7);
+    inst.push(0xf7);
     x86_reg_emit ((inst), 4 + if (is_signed) { 1 } else { 0 }, (reg));
 }
 
 fn x86_mul_mem(inst: &mut Emit, mem: i32, is_signed: bool) {
-    inst.emit(0xf7);
+    inst.push(0xf7);
     x86_mem_emit ((inst), 4 + if (is_signed) { 1 } else { 0 }, (mem));
 }
 
 fn x86_mul_membase(inst: &mut Emit, basereg: u8, disp: i32, is_signed: bool) {
-    inst.emit(0xf7);
+    inst.push(0xf7);
     x86_membase_emit ((inst), 4 + if (is_signed) { 1 } else { 0 }, (basereg), (disp));
 }
 
@@ -871,20 +871,20 @@ fn x86_mul_membase(inst: &mut Emit, basereg: u8, disp: i32, is_signed: bool) {
  * r *= rm
  */
 fn x86_imul_reg_reg(inst: &mut Emit, dreg: u8, reg: u8) {
-    inst.emit(0x0f);
-    inst.emit(0xaf);
+    inst.push(0x0f);
+    inst.push(0xaf);
     x86_reg_emit ((inst), (dreg), (reg));
 }
 
 fn x86_imul_reg_mem(inst: &mut Emit, reg: u8, mem: i32) {
-    inst.emit(0x0f);
-    inst.emit(0xaf);
+    inst.push(0x0f);
+    inst.push(0xaf);
     x86_mem_emit ((inst), (reg), (mem));
 }
 
 fn x86_imul_reg_membase(inst: &mut Emit, reg: u8, basereg: u8, disp: i32) {
-    inst.emit(0x0f);
-    inst.emit(0xaf);
+    inst.push(0x0f);
+    inst.push(0xaf);
     x86_membase_emit ((inst), (reg), (basereg), (disp));
 }
 
@@ -893,11 +893,11 @@ fn x86_imul_reg_membase(inst: &mut Emit, reg: u8, basereg: u8, disp: i32) {
  */
 fn x86_imul_reg_reg_imm(inst: &mut Emit, dreg: u8, reg: u8, imm: i32) {
     if (x86_is_imm8 ((imm))) {
-        inst.emit(0x6b);
+        inst.push(0x6b);
         x86_reg_emit ((inst), (dreg), (reg));
         x86_imm_emit8 ((inst), (imm));
     } else {
-        inst.emit(0x69);
+        inst.push(0x69);
         x86_reg_emit ((inst), (dreg), (reg));
         x86_imm_emit32 ((inst), (imm));
     }
@@ -905,11 +905,11 @@ fn x86_imul_reg_reg_imm(inst: &mut Emit, dreg: u8, reg: u8, imm: i32) {
 
 fn x86_imul_reg_mem_imm(inst: &mut Emit, reg: u8, mem: i32, imm: i32) {
     if (x86_is_imm8 ((imm))) {
-        inst.emit(0x6b);
+        inst.push(0x6b);
         x86_mem_emit ((inst), (reg), (mem));
         x86_imm_emit8 ((inst), (imm));
     } else {
-        inst.emit(0x69);
+        inst.push(0x69);
         x86_reg_emit ((inst), (reg), (mem) as u8);
         x86_imm_emit32 ((inst), (imm));
     }
@@ -917,11 +917,11 @@ fn x86_imul_reg_mem_imm(inst: &mut Emit, reg: u8, mem: i32, imm: i32) {
 
 fn x86_imul_reg_membase_imm(inst: &mut Emit, reg: u8, basereg: u8, disp: i32, imm: i32) {
     if (x86_is_imm8 ((imm))) {
-        inst.emit(0x6b);
+        inst.push(0x6b);
         x86_membase_emit ((inst), (reg), (basereg), (disp));
         x86_imm_emit8 ((inst), (imm));
     } else {
-        inst.emit(0x69);
+        inst.push(0x69);
         x86_membase_emit ((inst), (reg), (basereg), (disp));
         x86_imm_emit32 ((inst), (imm));
     }
@@ -933,28 +933,28 @@ fn x86_imul_reg_membase_imm(inst: &mut Emit, reg: u8, basereg: u8, disp: i32, im
  */
 
 fn x86_div_reg(inst: &mut Emit, reg: u8, is_signed: bool) {
-    inst.emit(0xf7);
+    inst.push(0xf7);
     x86_reg_emit ((inst), 6 + if (is_signed) { 1 } else { 0 }, (reg));
 }
 
 fn x86_div_mem(inst: &mut Emit, mem: i32, is_signed: bool) {
-    inst.emit(0xf7);
+    inst.push(0xf7);
     x86_mem_emit ((inst), 6 + if is_signed { 1 } else { 0 }, (mem));
 }
 
 fn x86_div_membase(inst: &mut Emit, basereg: u8, disp: i32, is_signed: bool) {
-    inst.emit(0xf7);
+    inst.push(0xf7);
     x86_membase_emit ((inst), 6 + if is_signed { 1 } else { 0 }, (basereg), (disp));
 }
 
 fn x86_mov_mem_reg(inst: &mut Emit, mem: i32, reg: u8, size: i32) {
     match size {
-        1 => inst.emit(0x88),
+        1 => inst.push(0x88),
         2 | 4 => {
             if size == 2 {
-                inst.emit(0x66);
+                inst.push(0x66);
             }
-            inst.emit(0x89);
+            inst.push(0x89);
         }
         _ => jit_assert! ()
     }
@@ -963,12 +963,12 @@ fn x86_mov_mem_reg(inst: &mut Emit, mem: i32, reg: u8, size: i32) {
 
 fn x86_mov_regp_reg(inst: &mut Emit, regp: u8, reg: u8, size: i32) {
     match size {
-        1 => inst.emit(0x88),
+        1 => inst.push(0x88),
         2 | 4 => {
             if size == 2 {
-                inst.emit(0x66);
+                inst.push(0x66);
             }
-            inst.emit(0x89);
+            inst.push(0x89);
         }
         _ => jit_assert! ()
     }
@@ -977,12 +977,12 @@ fn x86_mov_regp_reg(inst: &mut Emit, regp: u8, reg: u8, size: i32) {
 
 fn x86_mov_membase_reg(inst: &mut Emit, basereg: u8, disp: i32, reg: u8, size: i32) {
     match size {
-        1 => inst.emit(0x88),
+        1 => inst.push(0x88),
         2 | 4 => {
             if size == 2 {
-                inst.emit(0x66);
+                inst.push(0x66);
             }
-            inst.emit(0x89);
+            inst.push(0x89);
         }
         _ => jit_assert! ()
     }
@@ -991,12 +991,12 @@ fn x86_mov_membase_reg(inst: &mut Emit, basereg: u8, disp: i32, reg: u8, size: i
 
 fn x86_mov_memindex_reg(inst: &mut Emit, basereg: u8, disp: i32, indexreg: u8, shift: u8, reg: u8, size: i32) {
     match size {
-        1 => inst.emit(0x88),
+        1 => inst.push(0x88),
         2 | 4 => {
             if size == 2 {
-                inst.emit(0x66);
+                inst.push(0x66);
             }
-            inst.emit(0x89);
+            inst.push(0x89);
         }
         _ => jit_assert! ()
     }
@@ -1005,12 +1005,12 @@ fn x86_mov_memindex_reg(inst: &mut Emit, basereg: u8, disp: i32, indexreg: u8, s
 
 fn x86_mov_reg_reg(inst: &mut Emit, dreg: u8, reg: u8, size: i32) {
     match size {
-        1 => inst.emit(0x8a),
+        1 => inst.push(0x8a),
         2 | 4 => {
             if size == 2 {
-                inst.emit(0x66);
+                inst.push(0x66);
             }
-            inst.emit(0x8b);
+            inst.push(0x8b);
         }
         _ => jit_assert! ()
     }
@@ -1019,12 +1019,12 @@ fn x86_mov_reg_reg(inst: &mut Emit, dreg: u8, reg: u8, size: i32) {
 
 fn x86_mov_reg_mem(inst: &mut Emit, reg: u8, mem: i32, size: i32) {
     match size {
-        1 => inst.emit(0x8a),
+        1 => inst.push(0x8a),
         2 | 4 => {
             if size == 2 {
-                inst.emit(0x66);
+                inst.push(0x66);
             }
-            inst.emit(0x8b);
+            inst.push(0x8b);
         }
         _ => jit_assert! ()
     }
@@ -1033,12 +1033,12 @@ fn x86_mov_reg_mem(inst: &mut Emit, reg: u8, mem: i32, size: i32) {
 
 fn x86_mov_reg_membase(inst: &mut Emit, reg: u8, basereg: u8, disp: i32, size: i32) {
     match size {
-        1 => inst.emit(0x8a),
+        1 => inst.push(0x8a),
         2 | 4 => {
             if size == 2 {
-                inst.emit(0x66);
+                inst.push(0x66);
             }
-            inst.emit(0x8b);
+            inst.push(0x8b);
         }
         _ => jit_assert! ()
     }
@@ -1047,12 +1047,12 @@ fn x86_mov_reg_membase(inst: &mut Emit, reg: u8, basereg: u8, disp: i32, size: i
 
 fn x86_mov_reg_memindex(inst: &mut Emit, reg: u8, basereg: u8, disp: i32, indexreg: u8, shift: u8, size: i32) {
     match size {
-        1 => inst.emit(0x8a),
+        1 => inst.push(0x8a),
         2 | 4 => {
             if size == 2 {
-                inst.emit(0x66);
+                inst.push(0x66);
             }
-            inst.emit(0x8b);
+            inst.push(0x8b);
         }
         _ => jit_assert! ()
     }
@@ -1067,22 +1067,22 @@ fn x86_clear_reg(inst: &mut Emit, reg: u8) {
 }
 
 fn x86_mov_reg_imm(inst: &mut Emit, reg: u8, imm: i32) {
-    inst.emit(0xb8 + (reg));
+    inst.push(0xb8 + (reg));
     x86_imm_emit32 ((inst), (imm));
 }
 
 fn x86_mov_mem_imm(inst: &mut Emit, mem: i32, imm: i32, size: i32) {
     if ((size) == 1) {
-        inst.emit(0xc6);
+        inst.push(0xc6);
         x86_mem_emit ((inst), 0, (mem));
         x86_imm_emit8 ((inst), (imm));
     } else if ((size) == 2) {
-        inst.emit(0x66);
-        inst.emit(0xc7);
+        inst.push(0x66);
+        inst.push(0xc7);
         x86_mem_emit ((inst), 0, (mem));
         x86_imm_emit16 ((inst), (imm));
     } else {
-        inst.emit(0xc7);
+        inst.push(0xc7);
         x86_mem_emit ((inst), 0, (mem));
         x86_imm_emit32 ((inst), (imm));
     }
@@ -1090,16 +1090,16 @@ fn x86_mov_mem_imm(inst: &mut Emit, mem: i32, imm: i32, size: i32) {
 
 fn x86_mov_membase_imm(inst: &mut Emit, basereg: u8, disp: i32, imm: i32, size: i32) {
     if ((size) == 1) {
-        inst.emit(0xc6);
+        inst.push(0xc6);
         x86_membase_emit ((inst), 0, (basereg), (disp));
         x86_imm_emit8 ((inst), (imm));
     } else if ((size) == 2) {
-        inst.emit(0x66);
-        inst.emit(0xc7);
+        inst.push(0x66);
+        inst.push(0xc7);
         x86_membase_emit ((inst), 0, (basereg), (disp));
         x86_imm_emit16 ((inst), (imm));
     } else {
-        inst.emit(0xc7);
+        inst.push(0xc7);
         x86_membase_emit ((inst), 0, (basereg), (disp));
         x86_imm_emit32 ((inst), (imm));
     }
@@ -1107,117 +1107,117 @@ fn x86_mov_membase_imm(inst: &mut Emit, basereg: u8, disp: i32, imm: i32, size: 
 
 fn x86_mov_memindex_imm(inst: &mut Emit, basereg: u8, disp: i32, indexreg: u8, shift: u8, imm: i32, size: i32) {
     if ((size) == 1) {
-        inst.emit(0xc6);
+        inst.push(0xc6);
         x86_memindex_emit ((inst), 0, (basereg), (disp), (indexreg), (shift));
         x86_imm_emit8 ((inst), (imm));
     } else if ((size) == 2) {
-        inst.emit(0x66);
-        inst.emit(0xc7);
+        inst.push(0x66);
+        inst.push(0xc7);
         x86_memindex_emit ((inst), 0, (basereg), (disp), (indexreg), (shift));
         x86_imm_emit16 ((inst), (imm));
     } else {
-        inst.emit(0xc7);
+        inst.push(0xc7);
         x86_memindex_emit ((inst), 0, (basereg), (disp), (indexreg), (shift));
         x86_imm_emit32 ((inst), (imm));
     }
 }
 
 fn x86_lea_mem(inst: &mut Emit, reg: u8, mem: i32) {
-    inst.emit(0x8d);
+    inst.push(0x8d);
     x86_mem_emit ((inst), (reg), (mem));
 }
 
 fn x86_lea_membase(inst: &mut Emit, reg: u8, basereg: u8, disp: i32) {
-    inst.emit(0x8d);
+    inst.push(0x8d);
     x86_membase_emit ((inst), (reg), (basereg), (disp));
 }
 
 fn x86_lea_memindex(inst: &mut Emit, reg: u8, basereg: u8, disp: i32, indexreg: u8, shift: u8) {
-    inst.emit(0x8d);
+    inst.push(0x8d);
     x86_memindex_emit ((inst), (reg), (basereg), (disp), (indexreg), (shift));
 }
 
 fn x86_widen_reg(inst: &mut Emit, dreg: u8, reg: u8, is_signed: bool, is_half: bool) {
     let mut op = 0xb6;
     jit_assert! (is_half ||  X86_IS_BYTE_REG (reg));
-    inst.emit(0x0f);
+    inst.push(0x0f);
     if ((is_signed)) {
         op += 0x08;
     }
     if ((is_half)) {
         op += 0x01;
     }
-    inst.emit(op);
+    inst.push(op);
     x86_reg_emit ((inst), (dreg), (reg));
 }
 
 fn x86_widen_mem(inst: &mut Emit, dreg: u8, mem: i32, is_signed: bool, is_half: bool) {
     let mut op = 0xb6;
-    inst.emit(0x0f);
+    inst.push(0x0f);
     if ((is_signed)) {
         op += 0x08;
     }
     if ((is_half)) {
         op += 0x01;
     }
-    inst.emit(op);
+    inst.push(op);
     x86_mem_emit ((inst), (dreg), (mem));
 }
 
 fn x86_widen_membase(inst: &mut Emit, dreg: u8, basereg: u8, disp: i32, is_signed: bool, is_half: bool) {
     let mut op = 0xb6;
-    inst.emit(0x0f);
+    inst.push(0x0f);
     if ((is_signed)) {
         op += 0x08;
     }
     if ((is_half)) {
         op += 0x01;
     }
-    inst.emit(op);
+    inst.push(op);
     x86_membase_emit ((inst), (dreg), (basereg), (disp));
 }
 
 fn x86_widen_memindex(inst: &mut Emit, dreg: u8, basereg: u8, disp: i32, indexreg: u8, shift: u8, is_signed: bool, is_half: bool) {
     let mut op = 0xb6;
-    inst.emit(0x0f);
+    inst.push(0x0f);
     if ((is_signed)) {
         op += 0x08;
     }
     if ((is_half)) {
         op += 0x01;
     }
-    inst.emit(op);
+    inst.push(op);
     x86_memindex_emit ((inst), (dreg), (basereg), (disp), (indexreg), (shift));
 }
 
 fn x86_cdq(inst: &mut Emit) {
-    inst.emit(0x99);
+    inst.push(0x99);
 }
 
 fn x86_wait(inst: &mut Emit) {
-    inst.emit(0x9b);
+    inst.push(0x9b);
 }
 
 fn x86_fp_op_mem(inst: &mut Emit, opc: u8, mem: i32, is_double: bool) {
-    inst.emit(if (is_double) { 0xdc } else { 0xd8 });
+    inst.push(if (is_double) { 0xdc } else { 0xd8 });
     x86_mem_emit ((inst), (opc), (mem));
 }
 
 fn x86_fp_op_membase(inst: &mut Emit, opc: u8, basereg: u8, disp: i32, is_double: bool) {
-    inst.emit(if (is_double) { 0xdc } else { 0xd8 });
+    inst.push(if (is_double) { 0xdc } else { 0xd8 });
     x86_membase_emit ((inst), (opc), (basereg), (disp));
 }
 
 fn x86_fp_op(inst: &mut Emit, opc: u8, index: u8) {
-    inst.emit(0xd8);
-    inst.emit(0xc0+((opc)<<3)+((index)&0x07));
+    inst.push(0xd8);
+    inst.push(0xc0+((opc)<<3)+((index)&0x07));
 }
 
 const x86_fp_op_reg_map : [u8; 9] = [0, 1, 2, 3, 5, 4, 7, 6, 8];
 
 fn x86_fp_op_reg(inst: &mut Emit, opc: u8, index: u8, pop_stack: bool) {
-    inst.emit(if (pop_stack) { 0xde } else { 0xdc });
-    inst.emit(0xc0+(x86_fp_op_reg_map[(opc) as usize]<<3)+((index)&0x07));
+    inst.push(if (pop_stack) { 0xde } else { 0xdc });
+    inst.push(0xc0+(x86_fp_op_reg_map[(opc) as usize]<<3)+((index)&0x07));
 }
 
 /**
@@ -1228,209 +1228,209 @@ fn x86_fp_op_reg(inst: &mut Emit, opc: u8, index: u8, pop_stack: bool) {
  * is_int specifies whether operand is int32 (TRUE) or int16 (FALSE).
  */
 fn x86_fp_int_op_membase(inst: &mut Emit, opc: u8, basereg: u8, disp: i32, is_int: bool) {
-    inst.emit(if (is_int) { 0xda } else { 0xde });
+    inst.push(if (is_int) { 0xda } else { 0xde });
     x86_membase_emit ((inst), opc, (basereg), (disp));
 }
 
 fn x86_fstp(inst: &mut Emit, index: u8) {
-    inst.emit(0xdd);
-    inst.emit(0xd8+(index));
+    inst.push(0xdd);
+    inst.push(0xd8+(index));
 }
 
 fn x86_fcompp(inst: &mut Emit) {
-    inst.emit(0xde);
-    inst.emit(0xd9);
+    inst.push(0xde);
+    inst.push(0xd9);
 }
 
 fn x86_fucompp(inst: &mut Emit) {
-    inst.emit(0xda);
-    inst.emit(0xe9);
+    inst.push(0xda);
+    inst.push(0xe9);
 }
 
 fn x86_fnstsw(inst: &mut Emit) {
-    inst.emit(0xdf);
-    inst.emit(0xe0);
+    inst.push(0xdf);
+    inst.push(0xe0);
 }
 
 fn x86_fnstcw(inst: &mut Emit, mem: i32) {
-    inst.emit(0xd9);
+    inst.push(0xd9);
     x86_mem_emit ((inst), 7, (mem));
 }
 
 fn x86_fnstcw_membase(inst: &mut Emit, basereg: u8, disp: i32) {
-    inst.emit(0xd9);
+    inst.push(0xd9);
     x86_membase_emit ((inst), 7, (basereg), (disp));
 }
 
 fn x86_fldcw(inst: &mut Emit, mem: i32) {
-    inst.emit(0xd9);
+    inst.push(0xd9);
     x86_mem_emit ((inst), 5, (mem));
 }
 
 fn x86_fldcw_membase(inst: &mut Emit, basereg: u8, disp: i32) {
-    inst.emit(0xd9);
+    inst.push(0xd9);
     x86_membase_emit ((inst), 5, (basereg), (disp));
 }
 
 fn x86_fchs(inst: &mut Emit) {
-    inst.emit(0xd9);
-    inst.emit(0xe0);
+    inst.push(0xd9);
+    inst.push(0xe0);
 }
 
 fn x86_frem(inst: &mut Emit) {
-    inst.emit(0xd9);
-    inst.emit(0xf8);
+    inst.push(0xd9);
+    inst.push(0xf8);
 }
 
 fn x86_fxch(inst: &mut Emit, index: u8) {
-    inst.emit(0xd9);
-    inst.emit(0xc8 + ((index) & 0x07));
+    inst.push(0xd9);
+    inst.push(0xc8 + ((index) & 0x07));
 }
 
 fn x86_fcomi(inst: &mut Emit, index: u8) {
-    inst.emit(0xdb);
-    inst.emit(0xf0 + ((index) & 0x07));
+    inst.push(0xdb);
+    inst.push(0xf0 + ((index) & 0x07));
 }
 
 fn x86_fcomip(inst: &mut Emit, index: u8) {
-    inst.emit(0xdf);
-    inst.emit(0xf0 + ((index) & 0x07));
+    inst.push(0xdf);
+    inst.push(0xf0 + ((index) & 0x07));
 }
 
 fn x86_fucomi(inst: &mut Emit, index: u8) {
-    inst.emit(0xdb);
-    inst.emit(0xe8 + ((index) & 0x07));
+    inst.push(0xdb);
+    inst.push(0xe8 + ((index) & 0x07));
 }
 
 fn x86_fucomip(inst: &mut Emit, index: u8) {
-    inst.emit(0xdf);
-    inst.emit(0xe8 + ((index) & 0x07));
+    inst.push(0xdf);
+    inst.push(0xe8 + ((index) & 0x07));
 }
 
 fn x86_fld(inst: &mut Emit, mem: i32, is_double: bool) {
-    inst.emit(if (is_double) { 0xdd } else { 0xd9 });
+    inst.push(if (is_double) { 0xdd } else { 0xd9 });
     x86_mem_emit ((inst), 0, (mem));
 }
 
 fn x86_fld_membase(inst: &mut Emit, basereg: u8, disp: i32, is_double: bool) {
-    inst.emit(if (is_double) { 0xdd } else { 0xd9 });
+    inst.push(if (is_double) { 0xdd } else { 0xd9 });
     x86_membase_emit ((inst), 0, (basereg), (disp));
 }
 
 fn x86_fld_memindex(inst: &mut Emit, basereg: u8, disp: i32, indexreg: u8, shift: u8, is_double: bool) {
-    inst.emit(if (is_double) { 0xdd } else { 0xd9 });
+    inst.push(if (is_double) { 0xdd } else { 0xd9 });
     x86_memindex_emit ((inst), 0, (basereg), (disp), (indexreg), (shift));
 }
 
 fn x86_fld80_mem(inst: &mut Emit, mem: i32) {
-    inst.emit(0xdb);
+    inst.push(0xdb);
     x86_mem_emit ((inst), 5, (mem));
 }
 
 fn x86_fld80_membase(inst: &mut Emit, basereg: u8, disp: i32) {
-    inst.emit(0xdb);
+    inst.push(0xdb);
     x86_membase_emit ((inst), 5, (basereg), (disp));
 }
 
 fn x86_fld80_memindex(inst: &mut Emit, basereg: u8, disp: i32, indexreg: u8, shift: u8) {
-    inst.emit(0xdb);
+    inst.push(0xdb);
     x86_memindex_emit ((inst), 5, (basereg), (disp), (indexreg), (shift));
 }
 
 fn x86_fild(inst: &mut Emit, mem: i32, is_long: bool) {
     if ((is_long)) {
-        inst.emit(0xdf);
+        inst.push(0xdf);
         x86_mem_emit ((inst), 5, (mem));
     } else {
-        inst.emit(0xdb);
+        inst.push(0xdb);
         x86_mem_emit ((inst), 0, (mem));
     }
 }
 
 fn x86_fild_membase(inst: &mut Emit, basereg: u8, disp: i32, is_long: bool) {
     if ((is_long)) {
-        inst.emit(0xdf);
+        inst.push(0xdf);
         x86_membase_emit ((inst), 5, (basereg), (disp));
     } else {
-        inst.emit(0xdb);
+        inst.push(0xdb);
         x86_membase_emit ((inst), 0, (basereg), (disp));
     }
 }
 
 fn x86_fld_reg(inst: &mut Emit, index: u8) {
-    inst.emit(0xd9);
-    inst.emit(0xc0 + ((index) & 0x07));
+    inst.push(0xd9);
+    inst.push(0xc0 + ((index) & 0x07));
 }
 
 fn x86_fldz(inst: &mut Emit) {
-    inst.emit(0xd9);
-    inst.emit(0xee);
+    inst.push(0xd9);
+    inst.push(0xee);
 }
 
 fn x86_fld1(inst: &mut Emit) {
-    inst.emit(0xd9);
-    inst.emit(0xe8);
+    inst.push(0xd9);
+    inst.push(0xe8);
 }
 
 fn x86_fldpi(inst: &mut Emit) {
-    inst.emit(0xd9);
-    inst.emit(0xeb);
+    inst.push(0xd9);
+    inst.push(0xeb);
 }
 
 fn x86_fst(inst: &mut Emit, mem: i32, is_double: bool, pop_stack: bool) {
-    inst.emit(if (is_double) { 0xdd } else { 0xd9 });
+    inst.push(if (is_double) { 0xdd } else { 0xd9 });
     x86_mem_emit ((inst), 2 + if pop_stack { 1 } else { 0 }, (mem));
 }
 
 fn x86_fst_membase(inst: &mut Emit, basereg: u8, disp: i32, is_double: bool, pop_stack: bool) {
-    inst.emit(if (is_double) { 0xdd } else { 0xd9 });
+    inst.push(if (is_double) { 0xdd } else { 0xd9 });
     x86_membase_emit ((inst), 2 + if pop_stack { 1 } else { 0 }, (basereg), (disp));
 }
 
 fn x86_fst_memindex(inst: &mut Emit, basereg: u8, disp: i32, indexreg: u8, shift: u8, is_double: bool, pop_stack: bool) {
-    inst.emit(if (is_double) { 0xdd } else { 0xd9 });
+    inst.push(if (is_double) { 0xdd } else { 0xd9 });
     x86_memindex_emit ((inst), 2 + if pop_stack { 1 } else { 0 }, (basereg), (disp), (indexreg), (shift));
 }
 
 fn x86_fst80_mem(inst: &mut Emit, mem: i32) {
-    inst.emit(0xdb);
+    inst.push(0xdb);
     x86_mem_emit ((inst), 7, (mem));
 }
 
 fn x86_fst80_membase(inst: &mut Emit, basereg: u8, disp: i32) {
-    inst.emit(0xdb);
+    inst.push(0xdb);
     x86_membase_emit ((inst), 7, (basereg), (disp));
 }
 
 fn x86_fst80_memindex(inst: &mut Emit, basereg: u8, disp: i32, indexreg: u8, shift: u8) {
-    inst.emit(0xdb);
+    inst.push(0xdb);
     x86_memindex_emit ((inst), 7, (basereg), (disp), (indexreg), (shift));
 }
 
 fn x86_fist_pop(inst: &mut Emit, mem: i32, is_long: bool) {
     if ((is_long)) {
-        inst.emit(0xdf);
+        inst.push(0xdf);
         x86_mem_emit ((inst), 7, (mem));
     } else {
-        inst.emit(0xdb);
+        inst.push(0xdb);
         x86_mem_emit ((inst), 3, (mem));
     }
 }
 
 fn x86_fist_pop_membase(inst: &mut Emit, basereg: u8, disp: i32, is_long: bool) {
     if ((is_long)) {
-        inst.emit(0xdf);
+        inst.push(0xdf);
         x86_membase_emit ((inst), 7, (basereg), (disp));
     } else {
-        inst.emit(0xdb);
+        inst.push(0xdb);
         x86_membase_emit ((inst), 3, (basereg), (disp));
     }
 }
 
 fn x86_fstsw(inst: &mut Emit) {
-    inst.emit(0x9b);
-    inst.emit(0xdf);
-    inst.emit(0xe0);
+    inst.push(0x9b);
+    inst.push(0xdf);
+    inst.push(0xe0);
 }
 
 /**
@@ -1441,35 +1441,35 @@ fn x86_fstsw(inst: &mut Emit) {
  */
 fn x86_fist_membase(inst: &mut Emit, basereg: u8, disp: i32, is_int: bool) {
     if ((is_int)) {
-        inst.emit(0xdb);
+        inst.push(0xdb);
         x86_membase_emit ((inst), 2, (basereg), (disp));
     } else {
-        inst.emit(0xdf);
+        inst.push(0xdf);
         x86_membase_emit ((inst), 2, (basereg), (disp));
     }
 }
 
 fn x86_push_reg(inst: &mut Emit, reg: u8) {
-    inst.emit(0x50 + (reg));
+    inst.push(0x50 + (reg));
 }
 
 fn x86_push_regp(inst: &mut Emit, reg: u8) {
-    inst.emit(0xff);
+    inst.push(0xff);
     x86_regp_emit ((inst), 6, (reg));
 }
 
 fn x86_push_mem(inst: &mut Emit, mem: i32) {
-    inst.emit(0xff);
+    inst.push(0xff);
     x86_mem_emit ((inst), 6, (mem));
 }
 
 fn x86_push_membase(inst: &mut Emit, basereg: u8, disp: i32) {
-    inst.emit(0xff);
+    inst.push(0xff);
     x86_membase_emit ((inst), 6, (basereg), (disp));
 }
 
 fn x86_push_memindex(inst: &mut Emit, basereg: u8, disp: i32, indexreg: u8, shift: u8) {
-    inst.emit(0xff);
+    inst.push(0xff);
     x86_memindex_emit ((inst), 6, (basereg), (disp), (indexreg), (shift));
 }
 
@@ -1480,86 +1480,86 @@ fn x86_push_imm_template(inst: &mut Emit) {
 	
 fn x86_push_imm(inst: &mut Emit, imm: i32) {
     if (x86_is_imm8 (imm)) {
-        inst.emit(0x6A);
+        inst.push(0x6A);
         x86_imm_emit8 ((inst), (imm));
     } else {
-        inst.emit(0x68);
+        inst.push(0x68);
         x86_imm_emit32 ((inst), (imm));
     }
 }
 
 fn x86_pop_reg(inst: &mut Emit, reg: u8) {
-    inst.emit(0x58 + (reg));
+    inst.push(0x58 + (reg));
 }
 
 fn x86_pop_mem(inst: &mut Emit, mem: i32) {
-    inst.emit(0x8f);
+    inst.push(0x8f);
     x86_mem_emit ((inst), 0, (mem));
 }
 
 fn x86_pop_membase(inst: &mut Emit, basereg: u8, disp: i32) {
-    inst.emit(0x8f);
+    inst.push(0x8f);
     x86_membase_emit ((inst), 0, (basereg), (disp));
 }
 
 fn x86_pushad(inst: &mut Emit) {
-    inst.emit(0x60);
+    inst.push(0x60);
 }
 
 fn x86_pushfd(inst: &mut Emit) {
-    inst.emit(0x9c);
+    inst.push(0x9c);
 }
 
 fn x86_popad(inst: &mut Emit) {
-    inst.emit(0x61);
+    inst.push(0x61);
 }
 
 fn x86_popfd(inst: &mut Emit) {
-    inst.emit(0x9d);
+    inst.push(0x9d);
 }
 
 fn x86_loop(inst: &mut Emit, imm: i32) {
-    inst.emit(0xe2);
+    inst.push(0xe2);
     x86_imm_emit8 ((inst), (imm));
 }
 
 fn x86_loope(inst: &mut Emit, imm: i32) {
-    inst.emit(0xe1);
+    inst.push(0xe1);
     x86_imm_emit8 ((inst), (imm));
 }
 
 fn x86_loopne(inst: &mut Emit, imm: i32) {
-    inst.emit(0xe0);
+    inst.push(0xe0);
     x86_imm_emit8 ((inst), (imm));
 }
 
 fn x86_jump32(inst: &mut Emit, imm: i32) {
-    inst.emit(0xe9);
+    inst.push(0xe9);
     x86_imm_emit32 ((inst), (imm));
 }
 
 fn x86_jump8(inst: &mut Emit, imm: i32) {
-    inst.emit(0xeb);
+    inst.push(0xeb);
     x86_imm_emit8 ((inst), (imm));
 }
 
 fn x86_jump_reg(inst: &mut Emit, reg: u8) {
-    inst.emit(0xff);
+    inst.push(0xff);
     x86_reg_emit ((inst), 4, (reg));
 }
 
 fn x86_jump_mem(inst: &mut Emit, mem: i32) {
-    inst.emit(0xff);
+    inst.push(0xff);
     x86_mem_emit ((inst), 4, (mem));
 }
 
 fn x86_jump_membase(inst: &mut Emit, basereg: u8, disp: i32) {
-    inst.emit(0xff);
+    inst.push(0xff);
     x86_membase_emit ((inst), 4, (basereg), (disp));
 }
 
 fn x86_jump_memindex(inst: &mut Emit, basereg: u8, disp: i32, indexreg: u8, shift: u8) {
-    inst.emit(0xff);
+    inst.push(0xff);
     x86_memindex_emit ((inst), 4, (basereg), (disp), (indexreg), (shift));
 }
 
@@ -1588,19 +1588,19 @@ fn x86_jump_disp(inst: &mut Emit, disp: i32) {
 
 fn x86_branch8(inst: &mut Emit, cond: i32, imm: i32, is_signed: bool) {
     if ((is_signed)) {
-        inst.emit(x86_cc_signed_map [(cond) as usize]);
+        inst.push(x86_cc_signed_map [(cond) as usize]);
     } else {
-        inst.emit(x86_cc_unsigned_map [(cond) as usize]);
+        inst.push(x86_cc_unsigned_map [(cond) as usize]);
     }
     x86_imm_emit8 ((inst), (imm));
 }
 
 fn x86_branch32(inst: &mut Emit, cond: i32, imm: i32, is_signed: bool) {
-    inst.emit(0x0f);
+    inst.push(0x0f);
     if ((is_signed)) {
-        inst.emit(x86_cc_signed_map [(cond) as usize] + 0x10);
+        inst.push(x86_cc_signed_map [(cond) as usize] + 0x10);
     } else {
-        inst.emit(x86_cc_unsigned_map [(cond) as usize] + 0x10);
+        inst.push(x86_cc_unsigned_map [(cond) as usize] + 0x10);
     }
     x86_imm_emit32 ((inst), (imm));
 }
@@ -1627,52 +1627,52 @@ fn x86_branch_disp(inst: &mut Emit, cond: i32, disp: i32, is_signed: bool) {
 
 fn x86_set_reg(inst: &mut Emit, cond: i32, reg: u8, is_signed: bool) {
     jit_assert! (X86_IS_BYTE_REG (reg));
-    inst.emit(0x0f);
+    inst.push(0x0f);
     if ((is_signed)) {
-        inst.emit(x86_cc_signed_map [(cond) as usize] + 0x20);
+        inst.push(x86_cc_signed_map [(cond) as usize] + 0x20);
     } else {
-        inst.emit(x86_cc_unsigned_map [(cond) as usize] + 0x20);
+        inst.push(x86_cc_unsigned_map [(cond) as usize] + 0x20);
     }
     x86_reg_emit ((inst), 0, (reg));
 }
 
 fn x86_set_mem(inst: &mut Emit, cond: i32, mem: i32, is_signed: bool) {
-    inst.emit(0x0f);
+    inst.push(0x0f);
     if ((is_signed)) {
-        inst.emit(x86_cc_signed_map [(cond) as usize] + 0x20);
+        inst.push(x86_cc_signed_map [(cond) as usize] + 0x20);
     } else {
-        inst.emit(x86_cc_unsigned_map [(cond) as usize] + 0x20);
+        inst.push(x86_cc_unsigned_map [(cond) as usize] + 0x20);
     }
     x86_mem_emit ((inst), 0, (mem));
 }
 
 fn x86_set_membase(inst: &mut Emit, cond: i32, basereg: u8, disp: i32, is_signed: bool) {
-    inst.emit(0x0f);
+    inst.push(0x0f);
     if ((is_signed)) {
-        inst.emit(x86_cc_signed_map [(cond) as usize] + 0x20);
+        inst.push(x86_cc_signed_map [(cond) as usize] + 0x20);
     } else {
-        inst.emit(x86_cc_unsigned_map [(cond) as usize] + 0x20);
+        inst.push(x86_cc_unsigned_map [(cond) as usize] + 0x20);
     }
     x86_membase_emit ((inst), 0, (basereg), (disp));
 }
 
 fn x86_call_imm(inst: &mut Emit, disp: i32) {
-    inst.emit(0xe8);
+    inst.push(0xe8);
     x86_imm_emit32 ((inst), (disp));
 }
 
 fn x86_call_reg(inst: &mut Emit, reg: u8) {
-    inst.emit(0xff);
+    inst.push(0xff);
     x86_reg_emit ((inst), 2, (reg));
 }
 
 fn x86_call_mem(inst: &mut Emit, mem: i32) {
-    inst.emit(0xff);
+    inst.push(0xff);
     x86_mem_emit ((inst), 2, (mem));
 }
 
 fn x86_call_membase(inst: &mut Emit, basereg: u8, disp: i32) {
-    inst.emit(0xff);
+    inst.push(0xff);
     x86_membase_emit ((inst), 2, (basereg), (disp));
 }
 
@@ -1683,115 +1683,115 @@ fn x86_call_code(inst: &mut Emit, target: i32) {
 }
 
 fn x86_ret(inst: &mut Emit) {
-    inst.emit(0xc3);
+    inst.push(0xc3);
 }
 
 fn x86_ret_imm(inst: &mut Emit, imm: i32) {
     if ((imm) == 0) {
         x86_ret ((inst));
     } else {
-        inst.emit(0xc2);
+        inst.push(0xc2);
         x86_imm_emit16 ((inst), (imm));
     }
 }
 
 fn x86_cmov_reg(inst: &mut Emit, cond: i32, is_signed: bool, dreg: u8, reg: u8) {
-    inst.emit( 0x0f);
+    inst.push( 0x0f);
     if ((is_signed)) {
-        inst.emit(x86_cc_signed_map [(cond) as usize] - 0x30);
+        inst.push(x86_cc_signed_map [(cond) as usize] - 0x30);
     } else {
-        inst.emit(x86_cc_unsigned_map [(cond) as usize] - 0x30);
+        inst.push(x86_cc_unsigned_map [(cond) as usize] - 0x30);
     }
     x86_reg_emit ((inst), (dreg), (reg));
 }
 
 fn x86_cmov_mem(inst: &mut Emit, cond: i32, is_signed: bool, reg: u8, mem: i32) {
-    inst.emit( 0x0f);
+    inst.push( 0x0f);
     if ((is_signed)) {
-        inst.emit(x86_cc_signed_map [(cond) as usize] - 0x30);
+        inst.push(x86_cc_signed_map [(cond) as usize] - 0x30);
     }  else {
-        inst.emit(x86_cc_unsigned_map [(cond) as usize] - 0x30);
+        inst.push(x86_cc_unsigned_map [(cond) as usize] - 0x30);
     }
     x86_mem_emit ((inst), (reg), (mem));
 }
 
 fn x86_cmov_membase(inst: &mut Emit, cond: i32, is_signed: bool, reg: u8, basereg: u8, disp: i32) {
-    inst.emit( 0x0f);
+    inst.push( 0x0f);
     if ((is_signed)) {
-        inst.emit(x86_cc_signed_map [(cond) as usize] - 0x30);
+        inst.push(x86_cc_signed_map [(cond) as usize] - 0x30);
     } else {
-        inst.emit(x86_cc_unsigned_map [(cond) as usize] - 0x30);
+        inst.push(x86_cc_unsigned_map [(cond) as usize] - 0x30);
     }
     x86_membase_emit ((inst), (reg), (basereg), (disp));
 }
 
 fn x86_enter(inst: &mut Emit, framesize: i32) {
-    inst.emit(0xc8);
+    inst.push(0xc8);
     x86_imm_emit16 ((inst), (framesize));
-    inst.emit(0);
+    inst.push(0);
 }
 
 fn x86_leave(inst: &mut Emit) {
-    inst.emit(0xc9);
+    inst.push(0xc9);
 }
 
 fn x86_sahf(inst: &mut Emit) {
-    inst.emit(0x9e);
+    inst.push(0x9e);
 }
 
 fn x86_fsin(inst: &mut Emit) {
-    inst.emit(0xd9);
-    inst.emit(0xfe);
+    inst.push(0xd9);
+    inst.push(0xfe);
 }
 
 fn x86_fcos(inst: &mut Emit) {
-    inst.emit(0xd9);
-    inst.emit(0xff);
+    inst.push(0xd9);
+    inst.push(0xff);
 }
 
 fn x86_fabs(inst: &mut Emit) {
-    inst.emit(0xd9);
-    inst.emit(0xe1);
+    inst.push(0xd9);
+    inst.push(0xe1);
 }
 
 fn x86_ftst(inst: &mut Emit) {
-    inst.emit(0xd9);
-    inst.emit(0xe4);
+    inst.push(0xd9);
+    inst.push(0xe4);
 }
 
 fn x86_fxam(inst: &mut Emit) {
-    inst.emit(0xd9);
-    inst.emit(0xe5);
+    inst.push(0xd9);
+    inst.push(0xe5);
 }
 
 fn x86_fpatan(inst: &mut Emit) {
-    inst.emit(0xd9);
-    inst.emit(0xf3);
+    inst.push(0xd9);
+    inst.push(0xf3);
 }
 
 fn x86_fprem(inst: &mut Emit) {
-    inst.emit(0xd9);
-    inst.emit(0xf8);
+    inst.push(0xd9);
+    inst.push(0xf8);
 }
 
 fn x86_fprem1(inst: &mut Emit) {
-    inst.emit(0xd9);
-    inst.emit(0xf5);
+    inst.push(0xd9);
+    inst.push(0xf5);
 }
 
 fn x86_frndint(inst: &mut Emit) {
-    inst.emit(0xd9);
-    inst.emit(0xfc);
+    inst.push(0xd9);
+    inst.push(0xfc);
 }
 
 fn x86_fsqrt(inst: &mut Emit) {
-    inst.emit(0xd9);
-    inst.emit(0xfa);
+    inst.push(0xd9);
+    inst.push(0xfa);
 }
 
 fn x86_fptan(inst: &mut Emit) {
-    inst.emit(0xd9);
-    inst.emit(0xf2);
+    inst.push(0xd9);
+    inst.push(0xf2);
 }
 
 fn x86_padding(inst: &mut Emit, size: i32) {
@@ -1800,42 +1800,42 @@ fn x86_padding(inst: &mut Emit, size: i32) {
             x86_nop ((inst));
         }
         2 => {
-            inst.emit(0x8b);
-            inst.emit(0xc0);
+            inst.push(0x8b);
+            inst.push(0xc0);
         }
         3 => {
-            inst.emit(0x8d);
-            inst.emit(0x6d);
-            inst.emit(0x00);
+            inst.push(0x8d);
+            inst.push(0x6d);
+            inst.push(0x00);
         }
         4 => {
-            inst.emit(0x8d);
-            inst.emit(0x64);
-            inst.emit(0x24);
-            inst.emit(0x00);
+            inst.push(0x8d);
+            inst.push(0x64);
+            inst.push(0x24);
+            inst.push(0x00);
         }
         5 => {
-            inst.emit(0x8d);
-            inst.emit(0x64);
-            inst.emit(0x24);
-            inst.emit(0x00);
+            inst.push(0x8d);
+            inst.push(0x64);
+            inst.push(0x24);
+            inst.push(0x00);
         }
         6 => {
-            inst.emit(0x8d);
-            inst.emit(0xad);
-            inst.emit(0x00);
-            inst.emit(0x00);
-            inst.emit(0x00);
-            inst.emit(0x00);
+            inst.push(0x8d);
+            inst.push(0xad);
+            inst.push(0x00);
+            inst.push(0x00);
+            inst.push(0x00);
+            inst.push(0x00);
         }
         7 => {
-            inst.emit(0x8d);
-            inst.emit(0xa4);
-            inst.emit(0x24);
-            inst.emit(0x00);
-            inst.emit(0x00);
-            inst.emit(0x00);
-            inst.emit(0x00);
+            inst.push(0x8d);
+            inst.push(0xa4);
+            inst.push(0x24);
+            inst.push(0x00);
+            inst.push(0x00);
+            inst.push(0x00);
+            inst.push(0x00);
         }
         _ => jit_assert! ()
     }

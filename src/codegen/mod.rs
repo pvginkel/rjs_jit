@@ -12,22 +12,25 @@ macro_rules! jit_assert {
 
 mod x86;
 
-struct Emit;
+struct Emit {
+    stream: Vec<u8>
+}
 
 impl Emit {
-    fn emit(&mut self, b: u8) {
-        unimplemented!();
+    fn push(&mut self, b: u8) {
+        self.stream.push(b);
     }
     
-    fn emit_at(&mut self, b: u8, pos: i32) {
-        unimplemented!();
+    fn set_at(&mut self, b: u8, pos: i32) {
+        let offset = (self.stream.len() as isize + pos as isize) as usize;
+        self.stream[offset] = b;
     }
     
     fn get(&self) -> u8 {
         self.get_at(0)
     }
     
-    fn get_at(&self, offset: i32) -> u8 {
-        unimplemented!();
+    fn get_at(&self, pos: i32) -> u8 {
+        self.stream[(self.stream.len() as isize + pos as isize) as usize]
     }
 }
