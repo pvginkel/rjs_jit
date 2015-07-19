@@ -1,6 +1,11 @@
 #![allow(unused_variables)]
 #![allow(dead_code)]
 
+use std::ptr;
+use self::os::*;
+
+const PAGE_SIZE : usize = 4 * 1024;
+
 macro_rules! jit_assert {
     () => {
         panic!("jit assert");
@@ -10,28 +15,67 @@ macro_rules! jit_assert {
     }
 }
 
-mod x86;
-mod x86_64;
+pub mod x86;
+pub mod x86_64;
+mod os;
 
-pub struct Emit {
+struct Writer {
     stream: Vec<u8>
 }
 
-impl Emit {
-    pub fn push(&mut self, b: u8) {
+impl Writer {
+    fn new() -> Writer {
+        Writer {
+            stream: Vec::new()
+        }
+    }
+    
+    fn push(&mut self, b: u8) {
         self.stream.push(b);
     }
     
-    pub fn set_at(&mut self, b: u8, pos: i32) {
-        let offset = (self.stream.len() as isize + pos as isize) as usize;
-        self.stream[offset] = b;
+    fn set_at(&mut self, b: u8, pos: usize) {
+        self.stream[pos] = b;
     }
     
-    pub fn get(&self) -> u8 {
+    fn get(&self) -> u8 {
         self.get_at(0)
     }
     
-    pub fn get_at(&self, pos: i32) -> u8 {
-        self.stream[(self.stream.len() as isize + pos as isize) as usize]
+    fn get_at(&self, pos: usize) -> u8 {
+        self.stream[pos]
+    }
+    
+    fn len(&self) -> usize {
+        self.stream.len()
+    }
+    
+    fn build(&self) -> JitFunction {
+        let size = (self.stream.len() + (PAGE_SIZE - 1)) & !(PAGE_SIZE - 1);
+        let memory = Memory::alloc(size).unwrap();
+        
+        unsafe { ptr::copy(self.stream.as_ptr(), memory.ptr(), self.stream.len()); }
+        
+        JitFunction {
+            memory: memory
+        }
+    }
+}
+
+pub struct Jit;
+
+impl Jit {
+    pub fn new() -> Jit {
+        Jit
+    }
+}
+
+pub struct JitFunction {
+    memory: Memory
+}
+
+impl JitFunction {
+    pub unsafe fn ptr(&self) -> *const u8 {
+        self.memory.ptr()
     }
 }

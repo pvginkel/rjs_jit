@@ -11,3 +11,7 @@ name = "rjs_jit"
 [lib]
 
 name = "rjs_jit"
+
+[dependencies]
+
+libc = "0.1"
