@@ -173,6 +173,39 @@ pub const X86_ROUND_DOWN : u8 = 0x01;		/* Round towards negative infinity */
 pub const X86_ROUND_UP : u8 = 0x02;		/* Round towards positive infinity */
 pub const X86_ROUND_ZERO : u8= 0x03;		/* Round towards zero (truncate) */
 
+#[repr(u8)]
+#[derive(Copy, Clone)]
+pub enum AluOp {
+    Add = 0,
+    Or = 1,
+    Adc = 2,
+    Sbb = 3,
+    And = 4,
+    Sub = 5,
+    XOr = 6,
+    Cmp = 7
+}
+
+impl AluOp {
+    fn value(self) -> u8 {
+        unsafe { transmute(self) }
+    }
+}
+
+#[repr(u8)]
+#[derive(Copy, Clone)]
+pub enum ShiftOp {
+    Shl = 4,
+    Shr = 5,
+    Sar = 7,
+}
+
+impl ShiftOp {
+    fn value(self) -> u8 {
+        unsafe { transmute(self) }
+    }
+}
+
 const x86_cc_unsigned_map : [u8; 12] = [
 	0x74, /* eq  */
 	0x75, /* ne  */
@@ -481,11 +514,11 @@ impl Emit {
     /*
      * Macros to implement the simple opcodes.
      */
-    pub fn alu_reg_reg_size(&mut self, opc: u8, dreg: Reg, sreg: Reg, size: i32) {
+    pub fn alu_reg_reg_size(&mut self, opc: AluOp, dreg: Reg, sreg: Reg, size: i32) {
         match size {
             1 => {
                 self.rex_emit(size, (dreg), Reg::NONE, (sreg));
-                self.inst.push((((opc)) << 3) + 2);
+                self.inst.push((((opc.value())) << 3) + 2);
                 self.reg_emit((dreg.value()), (sreg));
             }
             2 | 4 | 8 => {
@@ -493,18 +526,18 @@ impl Emit {
                     self.inst.push(0x66);
                 }
                 self.rex_emit(size, (dreg), Reg::NONE, (sreg));
-                self.inst.push((((opc)) << 3) + 3);
+                self.inst.push((((opc.value())) << 3) + 3);
                 self.reg_emit((dreg.value()), (sreg));
             }
             _ => {}
         }
     }
     
-    pub fn alu_regp_reg_size(&mut self, opc: u8, dregp: Reg, sreg: Reg, size: i32) {
+    pub fn alu_regp_reg_size(&mut self, opc: AluOp, dregp: Reg, sreg: Reg, size: i32) {
         match size {
             1 => {
                 self.rex_emit(size, (sreg), Reg::NONE, (dregp));
-                self.inst.push((((opc)) << 3));
+                self.inst.push((((opc.value())) << 3));
                 self.regp_emit((sreg.value()), (dregp));
             }
             2 | 4 | 8 => {
@@ -512,18 +545,18 @@ impl Emit {
                     self.inst.push(0x66);
                 }
                 self.rex_emit(size, (sreg), Reg::NONE, (dregp));
-                self.inst.push((((opc)) << 3) + 1);
+                self.inst.push((((opc.value())) << 3) + 1);
                 self.regp_emit((sreg.value()), (dregp));
             }
             _ => {}
         }
     }
     
-    pub fn alu_mem_reg_size(&mut self, opc: u8, mem: i32, sreg: Reg, size: i32) {
+    pub fn alu_mem_reg_size(&mut self, opc: AluOp, mem: i32, sreg: Reg, size: i32) {
         match size {
             1 => {
                 self.rex_emit(size, (sreg), Reg::NONE, Reg::NONE);
-                self.inst.push((((opc)) << 3));
+                self.inst.push((((opc.value())) << 3));
                 self.mem_emit((sreg.value()), (mem));
             }
             2 | 4 | 8 => {
@@ -531,18 +564,18 @@ impl Emit {
                     self.inst.push(0x66);
                 }
                 self.rex_emit(size, (sreg), Reg::NONE, Reg::NONE);
-                self.inst.push((((opc)) << 3) + 1);
+                self.inst.push((((opc.value())) << 3) + 1);
                 self.mem_emit((sreg.value()), (mem));
             }
             _ => {}
         }
     }
     
-    pub fn alu_membase_reg_size(&mut self, opc: u8, basereg: Reg, disp: i32, sreg: Reg, size: i32) {
+    pub fn alu_membase_reg_size(&mut self, opc: AluOp, basereg: Reg, disp: i32, sreg: Reg, size: i32) {
         match size {
             1 => {
                 self.rex_emit(size, (sreg), Reg::NONE, (basereg));
-                self.inst.push((((opc)) << 3));
+                self.inst.push((((opc.value())) << 3));
                 self.membase_emit((sreg.value()), (basereg), (disp));
             }
             2 | 4 | 8 => {
@@ -550,18 +583,18 @@ impl Emit {
                     self.inst.push(0x66);
                 }
                 self.rex_emit(size, (sreg), Reg::NONE, (basereg));
-                self.inst.push((((opc)) << 3) + 1);
+                self.inst.push((((opc.value())) << 3) + 1);
                 self.membase_emit((sreg.value()), (basereg), (disp));
             }
             _ => {}
         }
     }
     
-    pub fn alu_memindex_reg_size(&mut self, opc: u8, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, sreg: Reg, size: i32) {
+    pub fn alu_memindex_reg_size(&mut self, opc: AluOp, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, sreg: Reg, size: i32) {
         match size {
             1 => {
                 self.rex_emit(size, (sreg), (indexreg), (basereg));
-                self.inst.push((((opc)) << 3));
+                self.inst.push((((opc.value())) << 3));
                 self.memindex_emit((sreg.value()), (basereg), (disp), (indexreg), (shift));
             }
             2 | 4 | 8 => {
@@ -569,18 +602,18 @@ impl Emit {
                     self.inst.push(0x66);
                 }
                 self.rex_emit(size, (sreg), (indexreg), (basereg));
-                self.inst.push((((opc)) << 3) + 1);
+                self.inst.push((((opc.value())) << 3) + 1);
                 self.memindex_emit((sreg.value()), (basereg), (disp), (indexreg), (shift));
             }
             _ => {}
         }
     }
     
-    pub fn alu_reg_regp_size(&mut self, opc: u8, dreg: Reg, sregp: Reg, size: i32) {
+    pub fn alu_reg_regp_size(&mut self, opc: AluOp, dreg: Reg, sregp: Reg, size: i32) {
         match size {
             1 => {
                 self.rex_emit(size, (dreg), Reg::NONE, (sregp));
-                self.inst.push((((opc)) << 3) + 2);
+                self.inst.push((((opc.value())) << 3) + 2);
                 self.regp_emit((dreg.value()), (sregp));
             }
             2 | 4 | 8 => {
@@ -588,18 +621,18 @@ impl Emit {
                     self.inst.push(0x66);
                 }
                 self.rex_emit(size, (dreg), Reg::NONE, (sregp));
-                self.inst.push((((opc)) << 3) + 3);
+                self.inst.push((((opc.value())) << 3) + 3);
                 self.regp_emit((dreg.value()), (sregp));
             }
             _ => {}
         }
     }
     
-    pub fn alu_reg_mem_size(&mut self, opc: u8, dreg: Reg, mem: i32, size: i32) {
+    pub fn alu_reg_mem_size(&mut self, opc: AluOp, dreg: Reg, mem: i32, size: i32) {
         match size {
             1 => {
                 self.rex_emit(size, (dreg), Reg::NONE, Reg::NONE);
-                self.inst.push((((opc)) << 3) + 2);
+                self.inst.push((((opc.value())) << 3) + 2);
                 self.mem_emit((dreg.value()), (mem));
             }
             2 | 4 | 8 => {
@@ -607,18 +640,18 @@ impl Emit {
                     self.inst.push(0x66);
                 }
                 self.rex_emit(size, (dreg), Reg::NONE, Reg::NONE);
-                self.inst.push((((opc)) << 3) + 3);
+                self.inst.push((((opc.value())) << 3) + 3);
                 self.mem_emit((dreg.value()), (mem));
             }
             _ => {}
         }
     }
     
-    pub fn alu_reg_membase_size(&mut self, opc: u8, dreg: Reg, basereg: Reg, disp: i32, size: i32) {
+    pub fn alu_reg_membase_size(&mut self, opc: AluOp, dreg: Reg, basereg: Reg, disp: i32, size: i32) {
         match size {
             1 => {
                 self.rex_emit(size, (dreg), Reg::NONE, (basereg));
-                self.inst.push((((opc)) << 3) + 2);
+                self.inst.push((((opc.value())) << 3) + 2);
                 self.membase_emit((dreg.value()), (basereg), (disp));
             }
             2 | 4 | 8 => {
@@ -626,18 +659,18 @@ impl Emit {
                     self.inst.push(0x66);
                 }
                 self.rex_emit(size, (dreg), Reg::NONE, (basereg));
-                self.inst.push((((opc)) << 3) + 3);
+                self.inst.push((((opc.value())) << 3) + 3);
                 self.membase_emit((dreg.value()), (basereg), (disp));
             }
             _ => {}
         }
     }
     
-    pub fn alu_reg_memindex_size(&mut self, opc: u8, dreg: Reg, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, size: i32) {
+    pub fn alu_reg_memindex_size(&mut self, opc: AluOp, dreg: Reg, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, size: i32) {
         match size {
             1 => {
                 self.rex_emit(size, (dreg), (indexreg), (basereg));
-                self.inst.push((((opc)) << 3) + 2);
+                self.inst.push((((opc.value())) << 3) + 2);
                 self.memindex_emit((dreg.value()), (basereg), (disp), (indexreg), (shift));
             }
             2 | 4 | 8 => {
@@ -645,7 +678,7 @@ impl Emit {
                     self.inst.push(0x66);
                 }
                 self.rex_emit(size, (dreg), (indexreg), (basereg));
-                self.inst.push((((opc)) << 3) + 3);
+                self.inst.push((((opc.value())) << 3) + 3);
                 self.memindex_emit((dreg.value()), (basereg), (disp), (indexreg), (shift));
             }
             _ => {}
@@ -655,21 +688,21 @@ impl Emit {
     /*
      * The immediate value has to be at most 32 bit wide.
      */
-    pub fn alu_reg_imm_size(&mut self, opc: u8, dreg: Reg, imm: i32, size: i32) {
+    pub fn alu_reg_imm_size(&mut self, opc: AluOp, dreg: Reg, imm: i32, size: i32) {
         if((dreg) == Reg::RAX) {
             match size {
                 1 => {
-                    self.inst.push((((opc)) << 3) + 4);
+                    self.inst.push((((opc.value())) << 3) + 4);
                     self.imm_emit8((imm));
                 }
                 2 => {
                     self.inst.push(0x66);
-                    self.inst.push((((opc)) << 3) + 5);
+                    self.inst.push((((opc.value())) << 3) + 5);
                     self.imm_emit16((imm));
                 }
                 4 | 8 => {
                     self.rex_emit((size), Reg::NONE, Reg::NONE, Reg::NONE);
-                    self.inst.push((((opc)) << 3) + 5);
+                    self.inst.push((((opc.value())) << 3) + 5);
                     self.imm_emit32((imm));
                 }
                 _ => {}
@@ -689,14 +722,14 @@ impl Emit {
                 }
                 _ => {}
             }
-            self.reg_emit((opc), (dreg));
+            self.reg_emit((opc.value()), (dreg));
             self.imm_emit8((imm));
         } else {
             match size {
                 1 => {
                     self.rex_emit(size, Reg::NONE, Reg::NONE, (dreg));
                     self.inst.push(0x80);
-                    self.reg_emit((opc), (dreg));
+                    self.reg_emit((opc.value()), (dreg));
                     self.imm_emit8((imm));
     //                jit_assert!(1);
                 }
@@ -704,13 +737,13 @@ impl Emit {
                     self.inst.push(0x66);
                     self.rex_emit(size, Reg::NONE, Reg::NONE, (dreg));
                     self.inst.push(0x81);
-                    self.reg_emit((opc), (dreg));
+                    self.reg_emit((opc.value()), (dreg));
                     self.imm_emit16((imm));
                 }
                 4 | 8 => {
                     self.rex_emit(size, Reg::NONE, Reg::NONE, (dreg));
                     self.inst.push(0x81);
-                    self.reg_emit((opc), (dreg));
+                    self.reg_emit((opc.value()), (dreg));
                     self.imm_emit32((imm));
                 }
                 _ => {}
@@ -718,7 +751,7 @@ impl Emit {
         }
     }
     
-    pub fn alu_regp_imm_size(&mut self, opc: u8, reg: Reg, imm: i32, size: i32) {
+    pub fn alu_regp_imm_size(&mut self, opc: AluOp, reg: Reg, imm: i32, size: i32) {
         if(Self::is_imm8((imm))) {
             match size {
                 1 => {
@@ -734,14 +767,14 @@ impl Emit {
                 }
                 _ => {}
             }
-            self.regp_emit((opc), (reg));
+            self.regp_emit((opc.value()), (reg));
             self.imm_emit8((imm));
         } else {
             match size {
                 1 => {
                     self.rex_emit(size, Reg::NONE, Reg::NONE, (reg));
                     self.inst.push(0x80);
-                    self.regp_emit((opc), (reg));
+                    self.regp_emit((opc.value()), (reg));
                     self.imm_emit8((imm));
     //                jit_assert!(1);
                 }
@@ -749,13 +782,13 @@ impl Emit {
                     self.inst.push(0x66);
                     self.rex_emit(size, Reg::NONE, Reg::NONE, (reg));
                     self.inst.push(0x81);
-                    self.regp_emit((opc), (reg));
+                    self.regp_emit((opc.value()), (reg));
                     self.imm_emit16((imm));
                 }
                 4 | 8 => {
                     self.rex_emit(size, Reg::NONE, Reg::NONE, (reg));
                     self.inst.push(0x81);
-                    self.regp_emit((opc), (reg));
+                    self.regp_emit((opc.value()), (reg));
                     self.imm_emit32((imm));
                 }
                 _ => {}
@@ -763,7 +796,7 @@ impl Emit {
         }
     }
     
-    pub fn alu_mem_imm_size(&mut self, opc: u8, mem: i32, imm: i32, size: i32) {
+    pub fn alu_mem_imm_size(&mut self, opc: AluOp, mem: i32, imm: i32, size: i32) {
         if (Self::is_imm8((imm))) {
             match size {
                 1 => {
@@ -779,14 +812,14 @@ impl Emit {
                 }
                 _ => {}
             }
-            self.mem_emit((opc), (mem));
+            self.mem_emit((opc.value()), (mem));
             self.imm_emit8((imm));
         } else {
             match size {
                 1 => {
                     self.rex_emit((size), Reg::NONE, Reg::NONE, Reg::NONE);
                     self.inst.push(0x80);
-                    self.mem_emit((opc), (mem));
+                    self.mem_emit((opc.value()), (mem));
                     self.imm_emit8((imm));
     //                jit_assert!(1);
                 }
@@ -794,13 +827,13 @@ impl Emit {
                     self.inst.push(0x66);
                     self.rex_emit((size), Reg::NONE, Reg::NONE, Reg::NONE);
                     self.inst.push(0x81);
-                    self.mem_emit((opc), (mem));
+                    self.mem_emit((opc.value()), (mem));
                     self.imm_emit16((imm));
                 }
                 4 | 8 => {
                     self.rex_emit((size), Reg::NONE, Reg::NONE, Reg::NONE);
                     self.inst.push(0x81);
-                    self.mem_emit((opc), (mem));
+                    self.mem_emit((opc.value()), (mem));
                     self.imm_emit32((imm));
                 }
                 _ => {}
@@ -808,7 +841,7 @@ impl Emit {
         }
     }
     
-    pub fn alu_membase_imm_size(&mut self, opc: u8, basereg: Reg, disp: i32, imm: i32, size: i32) {
+    pub fn alu_membase_imm_size(&mut self, opc: AluOp, basereg: Reg, disp: i32, imm: i32, size: i32) {
         if (Self::is_imm8((imm))) {
             match size {
                 1 => {
@@ -824,14 +857,14 @@ impl Emit {
                 }
                 _ => {}
             }
-            self.membase_emit((opc), (basereg), (disp));
+            self.membase_emit((opc.value()), (basereg), (disp));
             self.imm_emit8((imm));
         } else {
             match size {
                 1 => {
                     self.rex_emit((size), Reg::NONE, Reg::NONE, (basereg));
                     self.inst.push(0x80);
-                    self.membase_emit((opc), (basereg), (disp));
+                    self.membase_emit((opc.value()), (basereg), (disp));
                     self.imm_emit8((imm));
     //                jit_assert!(1);
                 }
@@ -839,13 +872,13 @@ impl Emit {
                     self.inst.push(0x66);
                     self.rex_emit((size), Reg::NONE, Reg::NONE, (basereg));
                     self.inst.push(0x81);
-                    self.membase_emit((opc), (basereg), (disp));
+                    self.membase_emit((opc.value()), (basereg), (disp));
                     self.imm_emit16((imm));
                 }
                 4 | 8 => {
                     self.rex_emit((size), Reg::NONE, Reg::NONE, (basereg));
                     self.inst.push(0x81);
-                    self.membase_emit((opc), (basereg), (disp));
+                    self.membase_emit((opc.value()), (basereg), (disp));
                     self.imm_emit32((imm));
                 }
                 _ => {}
@@ -853,7 +886,7 @@ impl Emit {
         }
     }
     
-    pub fn alu_memindex_imm_size(&mut self, opc: u8, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, imm: i32, size: i32) {
+    pub fn alu_memindex_imm_size(&mut self, opc: AluOp, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, imm: i32, size: i32) {
         if (Self::is_imm8((imm))) {
             match size {
                 1 => {
@@ -869,14 +902,14 @@ impl Emit {
                 }
                 _ => {}
             }
-            self.memindex_emit((opc), (basereg), (disp), (indexreg), (shift));
+            self.memindex_emit((opc.value()), (basereg), (disp), (indexreg), (shift));
             self.imm_emit8((imm));
         } else {
             match size {
                 1 => {
                     self.rex_emit((size), Reg::NONE, (indexreg), (basereg));
                     self.inst.push(0x80);
-                    self.memindex_emit((opc), (basereg), (disp), (indexreg), (shift));
+                    self.memindex_emit((opc.value()), (basereg), (disp), (indexreg), (shift));
                     self.imm_emit8((imm));
     //                jit_assert!(1);
                 }
@@ -884,13 +917,13 @@ impl Emit {
                     self.inst.push(0x66);
                     self.rex_emit((size), Reg::NONE, (indexreg), (basereg));
                     self.inst.push(0x81);
-                    self.memindex_emit((opc), (basereg), (disp), (indexreg), (shift));
+                    self.memindex_emit((opc.value()), (basereg), (disp), (indexreg), (shift));
                     self.imm_emit16((imm));
                 }
                 4 | 8 => {
                     self.rex_emit((size), Reg::NONE, (indexreg), (basereg));
                     self.inst.push(0x81);
-                    self.memindex_emit((opc), (basereg), (disp), (indexreg), (shift));
+                    self.memindex_emit((opc.value()), (basereg), (disp), (indexreg), (shift));
                     self.imm_emit32((imm));
                 }
                 _ => {}
@@ -1077,484 +1110,12 @@ impl Emit {
     /*
      * Group1 general instructions
      */
-    pub fn alu_reg_reg(&mut self, opc: u8, dreg: Reg, sreg: Reg) {
+    pub fn alu_reg_reg(&mut self, opc: AluOp, dreg: Reg, sreg: Reg) {
         self.alu_reg_reg_size((opc), (dreg), (sreg), 8);
     }
     
-    pub fn alu_reg_imm(&mut self, opc: u8, dreg: Reg, imm: i32) {
+    pub fn alu_reg_imm(&mut self, opc: AluOp, dreg: Reg, imm: i32) {
         self.alu_reg_imm_size((opc), (dreg), (imm), 8);
-    }
-    
-    /*
-     * ADC: Add with carry
-     */
-    pub fn adc_reg_reg_size(&mut self, dreg: Reg, sreg: Reg, size: i32) {
-        self.alu_reg_reg_size(2, (dreg), (sreg), (size));
-    }
-    
-    pub fn adc_regp_reg_size(&mut self, dregp: Reg, sreg: Reg, size: i32) {
-        self.alu_regp_reg_size(2, (dregp), (sreg), (size));
-    }
-    
-    pub fn adc_mem_reg_size(&mut self, mem: i32, sreg: Reg, size: i32) {
-        self.alu_mem_reg_size(2, (mem), (sreg), (size));
-    }
-    
-    pub fn adc_membase_reg_size(&mut self, basereg: Reg, disp: i32, sreg: Reg, size: i32) {
-        self.alu_membase_reg_size(2, (basereg), (disp), (sreg), (size));
-    }
-    
-    pub fn adc_memindex_reg_size(&mut self, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, sreg: Reg, size: i32) {
-        self.alu_memindex_reg_size(2, (basereg), (disp), (indexreg), (shift), (sreg), (size));
-    }
-    
-    pub fn adc_reg_regp_size(&mut self, dreg: Reg, sregp: Reg, size: i32) {
-        self.alu_reg_regp_size(2, (dreg), (sregp), (size));
-    }
-    
-    pub fn adc_reg_mem_size(&mut self, dreg: Reg, mem: i32, size: i32) {
-        self.alu_reg_mem_size(2, (dreg), (mem), (size));
-    }
-    
-    pub fn adc_reg_membase_size(&mut self, dreg: Reg, basereg: Reg, disp: i32, size: i32) {
-        self.alu_reg_membase_size(2, (dreg), (basereg), (disp), (size));
-    }
-    
-    pub fn adc_reg_memindex_size(&mut self, dreg: Reg, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, size: i32) {
-        self.alu_reg_memindex_size(2, (dreg), (basereg), (disp), (indexreg), (shift), (size));
-    }
-    
-    pub fn adc_reg_imm_size(&mut self, dreg: Reg, imm: i32, size: i32) {
-        self.alu_reg_imm_size(2, (dreg), (imm), (size));
-    }
-    
-    pub fn adc_regp_imm_size(&mut self, reg: Reg, imm: i32, size: i32) {
-        self.alu_regp_imm_size(2, (reg), (imm), (size));
-    }
-    
-    pub fn adc_mem_imm_size(&mut self, mem: i32, imm: i32, size: i32) {
-        self.alu_mem_imm_size(2, mem, imm, size);
-    }
-    
-    pub fn adc_membase_imm_size(&mut self, basereg: Reg, disp: i32, imm: i32, size: i32) {
-        self.alu_membase_imm_size(2, (basereg), (disp), (imm), (size));
-    }
-    
-    pub fn adc_memindex_imm_size(&mut self, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, imm: i32, size: i32) {
-        self.alu_memindex_imm_size(2, (basereg), (disp), (indexreg), (shift), (imm), (size));
-    }
-    
-    /*
-     * ADD
-     */
-    pub fn add_reg_reg_size(&mut self, dreg: Reg, sreg: Reg, size: i32) {
-        self.alu_reg_reg_size(0, (dreg), (sreg), (size));
-    }
-    
-    pub fn add_regp_reg_size(&mut self, dregp: Reg, sreg: Reg, size: i32) {
-        self.alu_regp_reg_size(0, (dregp), (sreg), (size));
-    }
-    
-    pub fn add_mem_reg_size(&mut self, mem: i32, sreg: Reg, size: i32) {
-        self.alu_mem_reg_size(0, (mem), (sreg), (size));
-    }
-    
-    pub fn add_membase_reg_size(&mut self, basereg: Reg, disp: i32, sreg: Reg, size: i32) {
-        self.alu_membase_reg_size(0, (basereg), (disp), (sreg), (size));
-    }
-    
-    pub fn add_memindex_reg_size(&mut self, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, sreg: Reg, size: i32) {
-        self.alu_memindex_reg_size(0, (basereg), (disp), (indexreg), (shift), (sreg), (size));
-    }
-    
-    pub fn add_reg_regp_size(&mut self, dreg: Reg, sregp: Reg, size: i32) {
-        self.alu_reg_regp_size(0, (dreg), (sregp), (size));
-    }
-    
-    pub fn add_reg_mem_size(&mut self, dreg: Reg, mem: i32, size: i32) {
-        self.alu_reg_mem_size(0, (dreg), (mem), (size));
-    }
-    
-    pub fn add_reg_membase_size(&mut self, dreg: Reg, basereg: Reg, disp: i32, size: i32) {
-        self.alu_reg_membase_size(0, (dreg), (basereg), (disp), (size));
-    }
-    
-    pub fn add_reg_memindex_size(&mut self, dreg: Reg, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, size: i32) {
-        self.alu_reg_memindex_size(0, (dreg), (basereg), (disp), (indexreg), (shift), (size));
-    }
-    
-    pub fn add_reg_imm_size(&mut self, dreg: Reg, imm: i32, size: i32) {
-        self.alu_reg_imm_size(0, (dreg), (imm), (size));
-    }
-    
-    pub fn add_regp_imm_size(&mut self, reg: Reg, imm: i32, size: i32) {
-        self.alu_regp_imm_size(0, (reg), (imm), (size));
-    }
-    
-    pub fn add_mem_imm_size(&mut self, mem: i32, imm: i32, size: i32) {
-        self.alu_mem_imm_size(0, mem, imm, size);
-    }
-    
-    pub fn add_membase_imm_size(&mut self, basereg: Reg, disp: i32, imm: i32, size: i32) {
-        self.alu_membase_imm_size(0, (basereg), (disp), (imm), (size));
-    }
-    
-    pub fn add_memindex_imm_size(&mut self, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, imm: i32, size: i32) {
-        self.alu_memindex_imm_size(0, (basereg), (disp), (indexreg), (shift), (imm), (size));
-    }
-    
-    /*
-     * AND
-     */
-    pub fn and_reg_reg_size(&mut self, dreg: Reg, sreg: Reg, size: i32) {
-        self.alu_reg_reg_size(4, (dreg), (sreg), (size));
-    }
-    
-    pub fn and_regp_reg_size(&mut self, dregp: Reg, sreg: Reg, size: i32) {
-        self.alu_regp_reg_size(4, (dregp), (sreg), (size));
-    }
-    
-    pub fn and_mem_reg_size(&mut self, mem: i32, sreg: Reg, size: i32) {
-        self.alu_mem_reg_size(4, (mem), (sreg), (size));
-    }
-    
-    pub fn and_membase_reg_size(&mut self, basereg: Reg, disp: i32, sreg: Reg, size: i32) {
-        self.alu_membase_reg_size(4, (basereg), (disp), (sreg), (size));
-    }
-    
-    pub fn and_memindex_reg_size(&mut self, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, sreg: Reg, size: i32) {
-        self.alu_memindex_reg_size(4, (basereg), (disp), (indexreg), (shift), (sreg), (size));
-    }
-    
-    pub fn and_reg_regp_size(&mut self, dreg: Reg, sregp: Reg, size: i32) {
-        self.alu_reg_regp_size(4, (dreg), (sregp), (size));
-    }
-    
-    pub fn and_reg_mem_size(&mut self, dreg: Reg, mem: i32, size: i32) {
-        self.alu_reg_mem_size(4, (dreg), (mem), (size));
-    }
-    
-    pub fn and_reg_membase_size(&mut self, dreg: Reg, basereg: Reg, disp: i32, size: i32) {
-        self.alu_reg_membase_size(4, (dreg), (basereg), (disp), (size));
-    }
-    
-    pub fn and_reg_memindex_size(&mut self, dreg: Reg, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, size: i32) {
-        self.alu_reg_memindex_size(4, (dreg), (basereg), (disp), (indexreg), (shift), (size));
-    }
-    
-    pub fn and_reg_imm_size(&mut self, dreg: Reg, imm: i32, size: i32) {
-        self.alu_reg_imm_size(4, (dreg), (imm), (size));
-    }
-    
-    pub fn and_regp_imm_size(&mut self, reg: Reg, imm: i32, size: i32) {
-        self.alu_regp_imm_size(4, (reg), (imm), (size));
-    }
-    
-    pub fn and_mem_imm_size(&mut self, mem: i32, imm: i32, size: i32) {
-        self.alu_mem_imm_size(4, mem, imm, size);
-    }
-    
-    pub fn and_membase_imm_size(&mut self, basereg: Reg, disp: i32, imm: i32, size: i32) {
-        self.alu_membase_imm_size(4, (basereg), (disp), (imm), (size));
-    }
-    
-    pub fn and_memindex_imm_size(&mut self, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, imm: i32, size: i32) {
-        self.alu_memindex_imm_size(4, (basereg), (disp), (indexreg), (shift), (imm), (size));
-    }
-    
-    /*
-     * CMP: compare
-     */
-    pub fn cmp_reg_reg_size(&mut self, dreg: Reg, sreg: Reg, size: i32) {
-        self.alu_reg_reg_size(7, (dreg), (sreg), (size));
-    }
-    
-    pub fn cmp_regp_reg_size(&mut self, dregp: Reg, sreg: Reg, size: i32) {
-        self.alu_regp_reg_size(7, (dregp), (sreg), (size));
-    }
-    
-    pub fn cmp_mem_reg_size(&mut self, mem: i32, sreg: Reg, size: i32) {
-        self.alu_mem_reg_size(7, (mem), (sreg), (size));
-    }
-    
-    pub fn cmp_membase_reg_size(&mut self, basereg: Reg, disp: i32, sreg: Reg, size: i32) {
-        self.alu_membase_reg_size(7, (basereg), (disp), (sreg), (size));
-    }
-    
-    pub fn cmp_memindex_reg_size(&mut self, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, sreg: Reg, size: i32) {
-        self.alu_memindex_reg_size(7, (basereg), (disp), (indexreg), (shift), (sreg), (size));
-    }
-    
-    pub fn cmp_reg_regp_size(&mut self, dreg: Reg, sregp: Reg, size: i32) {
-        self.alu_reg_regp_size(7, (dreg), (sregp), (size));
-    }
-    
-    pub fn cmp_reg_mem_size(&mut self, dreg: Reg, mem: i32, size: i32) {
-        self.alu_reg_mem_size(7, (dreg), (mem), (size));
-    }
-    
-    pub fn cmp_reg_membase_size(&mut self, dreg: Reg, basereg: Reg, disp: i32, size: i32) {
-        self.alu_reg_membase_size(7, (dreg), (basereg), (disp), (size));
-    }
-    
-    pub fn cmp_reg_memindex_size(&mut self, dreg: Reg, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, size: i32) {
-        self.alu_reg_memindex_size(7, (dreg), (basereg), (disp), (indexreg), (shift), (size));
-    }
-    
-    pub fn cmp_reg_imm_size(&mut self, dreg: Reg, imm: i32, size: i32) {
-        self.alu_reg_imm_size(7, (dreg), (imm), (size));
-    }
-    
-    pub fn cmp_regp_imm_size(&mut self, reg: Reg, imm: i32, size: i32) {
-        self.alu_regp_imm_size(7, (reg), (imm), (size));
-    }
-    
-    pub fn cmp_mem_imm_size(&mut self, mem: i32, imm: i32, size: i32) {
-        self.alu_mem_imm_size(7, mem, imm, size);
-    }
-    
-    pub fn cmp_membase_imm_size(&mut self, basereg: Reg, disp: i32, imm: i32, size: i32) {
-        self.alu_membase_imm_size(7, (basereg), (disp), (imm), (size));
-    }
-    
-    pub fn cmp_memindex_imm_size(&mut self, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, imm: i32, size: i32) {
-        self.alu_memindex_imm_size(7, (basereg), (disp), (indexreg), (shift), (imm), (size));
-    }
-    
-    /*
-     * OR
-     */
-    pub fn or_reg_reg_size(&mut self, dreg: Reg, sreg: Reg, size: i32) {
-        self.alu_reg_reg_size(1, (dreg), (sreg), (size));
-    }
-    
-    pub fn or_regp_reg_size(&mut self, dregp: Reg, sreg: Reg, size: i32) {
-        self.alu_regp_reg_size(1, (dregp), (sreg), (size));
-    }
-    
-    pub fn or_mem_reg_size(&mut self, mem: i32, sreg: Reg, size: i32) {
-        self.alu_mem_reg_size(1, (mem), (sreg), (size));
-    }
-    
-    pub fn or_membase_reg_size(&mut self, basereg: Reg, disp: i32, sreg: Reg, size: i32) {
-        self.alu_membase_reg_size(1, (basereg), (disp), (sreg), (size));
-    }
-    
-    pub fn or_memindex_reg_size(&mut self, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, sreg: Reg, size: i32) {
-        self.alu_memindex_reg_size(1, (basereg), (disp), (indexreg), (shift), (sreg), (size));
-    }
-    
-    pub fn or_reg_regp_size(&mut self, dreg: Reg, sregp: Reg, size: i32) {
-        self.alu_reg_regp_size(1, (dreg), (sregp), (size));
-    }
-    
-    pub fn or_reg_mem_size(&mut self, dreg: Reg, mem: i32, size: i32) {
-        self.alu_reg_mem_size(1, (dreg), (mem), (size));
-    }
-    
-    pub fn or_reg_membase_size(&mut self, dreg: Reg, basereg: Reg, disp: i32, size: i32) {
-        self.alu_reg_membase_size(1, (dreg), (basereg), (disp), (size));
-    }
-    
-    pub fn or_reg_memindex_size(&mut self, dreg: Reg, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, size: i32) {
-        self.alu_reg_memindex_size(1, (dreg), (basereg), (disp), (indexreg), (shift), (size));
-    }
-    
-    pub fn or_reg_imm_size(&mut self, dreg: Reg, imm: i32, size: i32) {
-        self.alu_reg_imm_size(1, (dreg), (imm), (size));
-    }
-    
-    pub fn or_regp_imm_size(&mut self, reg: Reg, imm: i32, size: i32) {
-        self.alu_regp_imm_size(1, (reg), (imm), (size));
-    }
-    
-    pub fn or_mem_imm_size(&mut self, mem: i32, imm: i32, size: i32) {
-        self.alu_mem_imm_size(1, mem, imm, size);
-    }
-    
-    pub fn or_membase_imm_size(&mut self, basereg: Reg, disp: i32, imm: i32, size: i32) {
-        self.alu_membase_imm_size(1, (basereg), (disp), (imm), (size));
-    }
-    
-    pub fn or_memindex_imm_size(&mut self, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, imm: i32, size: i32) {
-        self.alu_memindex_imm_size(1, (basereg), (disp), (indexreg), (shift), (imm), (size));
-    }
-    
-    /*
-     * SBB: Subtract with borrow from al
-     */
-    pub fn sbb_reg_reg_size(&mut self, dreg: Reg, sreg: Reg, size: i32) {
-        self.alu_reg_reg_size(3, (dreg), (sreg), (size));
-    }
-    
-    pub fn sbb_regp_reg_size(&mut self, dregp: Reg, sreg: Reg, size: i32) {
-        self.alu_regp_reg_size(3, (dregp), (sreg), (size));
-    }
-    
-    pub fn sbb_mem_reg_size(&mut self, mem: i32, sreg: Reg, size: i32) {
-        self.alu_mem_reg_size(3, (mem), (sreg), (size));
-    }
-    
-    pub fn sbb_membase_reg_size(&mut self, basereg: Reg, disp: i32, sreg: Reg, size: i32) {
-        self.alu_membase_reg_size(3, (basereg), (disp), (sreg), (size));
-    }
-    
-    pub fn sbb_memindex_reg_size(&mut self, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, sreg: Reg, size: i32) {
-        self.alu_memindex_reg_size(3, (basereg), (disp), (indexreg), (shift), (sreg), (size));
-    }
-    
-    pub fn sbb_reg_regp_size(&mut self, dreg: Reg, sregp: Reg, size: i32) {
-        self.alu_reg_regp_size(3, (dreg), (sregp), (size));
-    }
-    
-    pub fn sbb_reg_mem_size(&mut self, dreg: Reg, mem: i32, size: i32) {
-        self.alu_reg_mem_size(3, (dreg), (mem), (size));
-    }
-    
-    pub fn sbb_reg_membase_size(&mut self, dreg: Reg, basereg: Reg, disp: i32, size: i32) {
-        self.alu_reg_membase_size(3, (dreg), (basereg), (disp), (size));
-    }
-    
-    pub fn sbb_reg_memindex_size(&mut self, dreg: Reg, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, size: i32) {
-        self.alu_reg_memindex_size(3, (dreg), (basereg), (disp), (indexreg), (shift), (size));
-    }
-    
-    pub fn sbb_reg_imm_size(&mut self, dreg: Reg, imm: i32, size: i32) {
-        self.alu_reg_imm_size(3, (dreg), (imm), (size));
-    }
-    
-    pub fn sbb_regp_imm_size(&mut self, reg: Reg, imm: i32, size: i32) {
-        self.alu_regp_imm_size(3, (reg), (imm), (size));
-    }
-    
-    pub fn sbb_mem_imm_size(&mut self, mem: i32, imm: i32, size: i32) {
-        self.alu_mem_imm_size(3, mem, imm, size);
-    }
-    
-    pub fn sbb_membase_imm_size(&mut self, basereg: Reg, disp: i32, imm: i32, size: i32) {
-        self.alu_membase_imm_size(3, (basereg), (disp), (imm), (size));
-    }
-    
-    pub fn sbb_memindex_imm_size(&mut self, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, imm: i32, size: i32) {
-        self.alu_memindex_imm_size(3, (basereg), (disp), (indexreg), (shift), (imm), (size));
-    }
-    
-    /*
-     * SUB: Subtract
-     */
-    pub fn sub_reg_reg_size(&mut self, dreg: Reg, sreg: Reg, size: i32) {
-        self.alu_reg_reg_size(5, (dreg), (sreg), (size));
-    }
-    
-    pub fn sub_regp_reg_size(&mut self, dregp: Reg, sreg: Reg, size: i32) {
-        self.alu_regp_reg_size(5, (dregp), (sreg), (size));
-    }
-    
-    pub fn sub_mem_reg_size(&mut self, mem: i32, sreg: Reg, size: i32) {
-        self.alu_mem_reg_size(5, (mem), (sreg), (size));
-    }
-    
-    pub fn sub_membase_reg_size(&mut self, basereg: Reg, disp: i32, sreg: Reg, size: i32) {
-        self.alu_membase_reg_size(5, (basereg), (disp), (sreg), (size));
-    }
-    
-    pub fn sub_memindex_reg_size(&mut self, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, sreg: Reg, size: i32) {
-        self.alu_memindex_reg_size(5, (basereg), (disp), (indexreg), (shift), (sreg), (size));
-    }
-    
-    pub fn sub_reg_regp_size(&mut self, dreg: Reg, sregp: Reg, size: i32) {
-        self.alu_reg_regp_size(5, (dreg), (sregp), (size));
-    }
-    
-    pub fn sub_reg_mem_size(&mut self, dreg: Reg, mem: i32, size: i32) {
-        self.alu_reg_mem_size(5, (dreg), (mem), (size));
-    }
-    
-    pub fn sub_reg_membase_size(&mut self, dreg: Reg, basereg: Reg, disp: i32, size: i32) {
-        self.alu_reg_membase_size(5, (dreg), (basereg), (disp), (size));
-    }
-    
-    pub fn sub_reg_memindex_size(&mut self, dreg: Reg, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, size: i32) {
-        self.alu_reg_memindex_size(5, (dreg), (basereg), (disp), (indexreg), (shift), (size));
-    }
-    
-    pub fn sub_reg_imm_size(&mut self, dreg: Reg, imm: i32, size: i32) {
-        self.alu_reg_imm_size(5, (dreg), (imm), (size));
-    }
-    
-    pub fn sub_regp_imm_size(&mut self, reg: Reg, imm: i32, size: i32) {
-        self.alu_regp_imm_size(5, (reg), (imm), (size));
-    }
-    
-    pub fn sub_mem_imm_size(&mut self, mem: i32, imm: i32, size: i32) {
-        self.alu_mem_imm_size(5, mem, imm, size);
-    }
-    
-    pub fn sub_membase_imm_size(&mut self, basereg: Reg, disp: i32, imm: i32, size: i32) {
-        self.alu_membase_imm_size(5, (basereg), (disp), (imm), (size));
-    }
-    
-    pub fn sub_memindex_imm_size(&mut self, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, imm: i32, size: i32) {
-        self.alu_memindex_imm_size(5, (basereg), (disp), (indexreg), (shift), (imm), (size));
-    }
-    
-    /*
-     * XOR
-     */
-    pub fn xor_reg_reg_size(&mut self, dreg: Reg, sreg: Reg, size: i32) {
-        self.alu_reg_reg_size(6, (dreg), (sreg), (size));
-    }
-    
-    pub fn xor_regp_reg_size(&mut self, dregp: Reg, sreg: Reg, size: i32) {
-        self.alu_regp_reg_size(6, (dregp), (sreg), (size));
-    }
-    
-    pub fn xor_mem_reg_size(&mut self, mem: i32, sreg: Reg, size: i32) {
-        self.alu_mem_reg_size(6, (mem), (sreg), (size));
-    }
-    
-    pub fn xor_membase_reg_size(&mut self, basereg: Reg, disp: i32, sreg: Reg, size: i32) {
-        self.alu_membase_reg_size(6, (basereg), (disp), (sreg), (size));
-    }
-    
-    pub fn xor_memindex_reg_size(&mut self, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, sreg: Reg, size: i32) {
-        self.alu_memindex_reg_size(6, (basereg), (disp), (indexreg), (shift), (sreg), (size));
-    }
-    
-    pub fn xor_reg_regp_size(&mut self, dreg: Reg, sregp: Reg, size: i32) {
-        self.alu_reg_regp_size(6, (dreg), (sregp), (size));
-    }
-    
-    pub fn xor_reg_mem_size(&mut self, dreg: Reg, mem: i32, size: i32) {
-        self.alu_reg_mem_size(6, (dreg), (mem), (size));
-    }
-    
-    pub fn xor_reg_membase_size(&mut self, dreg: Reg, basereg: Reg, disp: i32, size: i32) {
-        self.alu_reg_membase_size(6, (dreg), (basereg), (disp), (size));
-    }
-    
-    pub fn xor_reg_memindex_size(&mut self, dreg: Reg, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, size: i32) {
-        self.alu_reg_memindex_size(6, (dreg), (basereg), (disp), (indexreg), (shift), (size));
-    }
-    
-    pub fn xor_reg_imm_size(&mut self, dreg: Reg, imm: i32, size: i32) {
-        self.alu_reg_imm_size(6, (dreg), (imm), (size));
-    }
-    
-    pub fn xor_regp_imm_size(&mut self, reg: Reg, imm: i32, size: i32) {
-        self.alu_regp_imm_size(6, (reg), (imm), (size));
-    }
-    
-    pub fn xor_mem_imm_size(&mut self, mem: i32, imm: i32, size: i32) {
-        self.alu_mem_imm_size(6, mem, imm, size);
-    }
-    
-    pub fn xor_membase_imm_size(&mut self, basereg: Reg, disp: i32, imm: i32, size: i32) {
-        self.alu_membase_imm_size(6, (basereg), (disp), (imm), (size));
-    }
-    
-    pub fn xor_memindex_imm_size(&mut self, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, imm: i32, size: i32) {
-        self.alu_memindex_imm_size(6, (basereg), (disp), (indexreg), (shift), (imm), (size));
     }
     
     /*
@@ -1724,103 +1285,103 @@ impl Emit {
      * Note: x86_64_clear_reg () changes the condition code!
      */
     pub fn clear_reg(&mut self, reg: Reg) {
-        self.xor_reg_reg_size((reg), (reg), 4)
+        self.alu_reg_reg_size(AluOp::XOr, (reg), (reg), 4)
     }
     
     /*
      * shift instructions
      */
-    pub fn shift_reg_imm_size(&mut self, opc: u8, dreg: Reg, imm: i32, size: i32) {
+    pub fn shift_reg_imm_size(&mut self, opc: ShiftOp, dreg: Reg, imm: i32, size: i32) {
         if ((imm) == 1) {
             if ((size) == 2) {
                 self.inst.push(0x66);
             }
             self.rex_emit((size), Reg::NONE, Reg::NONE, (dreg));
             self.opcode1_emit(0xd0, (size));
-            self.reg_emit((opc), (dreg));
+            self.reg_emit((opc.value()), (dreg));
         } else {
             if ((size) == 2) {
                 self.inst.push(0x66);
             }
             self.rex_emit((size), Reg::NONE, Reg::NONE, (dreg));
             self.opcode1_emit(0xc0, (size));
-            self.reg_emit((opc), (dreg));
+            self.reg_emit((opc.value()), (dreg));
             self.imm_emit8((imm));
         }
     }
     
-    pub fn shift_mem_imm_size(&mut self, opc: u8, mem: i32, imm: i32, size: i32) {
+    pub fn shift_mem_imm_size(&mut self, opc: ShiftOp, mem: i32, imm: i32, size: i32) {
         if ((imm) == 1) {
             if ((size) == 2) {
                 self.inst.push(0x66);
             }
             self.rex_emit((size), Reg::NONE, Reg::NONE, Reg::NONE);
             self.opcode1_emit(0xd0, (size));
-            self.mem_emit((opc), (mem));
+            self.mem_emit((opc.value()), (mem));
         } else {
             if ((size) == 2) {
                 self.inst.push(0x66);
             }
             self.rex_emit((size), Reg::NONE, Reg::NONE, Reg::NONE);
             self.opcode1_emit(0xc0, (size));
-            self.mem_emit((opc), (mem));
+            self.mem_emit((opc.value()), (mem));
             self.imm_emit8((imm));
         }
     }
     
-    pub fn shift_regp_imm_size(&mut self, opc: u8, dregp: Reg, imm: i32, size: i32) {
+    pub fn shift_regp_imm_size(&mut self, opc: ShiftOp, dregp: Reg, imm: i32, size: i32) {
         if ((imm) == 1) {
             if ((size) == 2) {
                 self.inst.push(0x66);
             }
             self.rex_emit((size), Reg::NONE, Reg::NONE, (dregp));
             self.opcode1_emit(0xd0, (size));
-            self.regp_emit((opc), (dregp));
+            self.regp_emit((opc.value()), (dregp));
         } else {
             if ((size) == 2) {
                 self.inst.push(0x66);
             }
             self.rex_emit((size), Reg::NONE, Reg::NONE, (dregp));
             self.opcode1_emit(0xc0, (size));
-            self.regp_emit((opc), (dregp));
+            self.regp_emit((opc.value()), (dregp));
             self.imm_emit8((imm));
         }
     }
     
-    pub fn shift_membase_imm_size(&mut self, opc: u8, basereg: Reg, disp: i32, imm: i32, size: i32) {
+    pub fn shift_membase_imm_size(&mut self, opc: ShiftOp, basereg: Reg, disp: i32, imm: i32, size: i32) {
         if ((imm) == 1) {
             if ((size) == 2) {
                 self.inst.push(0x66);
             }
             self.rex_emit((size), Reg::NONE, Reg::NONE, (basereg));
             self.opcode1_emit(0xd0, (size));
-            self.membase_emit((opc), (basereg), (disp));
+            self.membase_emit((opc.value()), (basereg), (disp));
         } else {
             if ((size) == 2) {
                 self.inst.push(0x66);
             }
             self.rex_emit((size), Reg::NONE, Reg::NONE, (basereg));
             self.opcode1_emit(0xc0, (size));
-            self.membase_emit((opc), (basereg), (disp));
+            self.membase_emit((opc.value()), (basereg), (disp));
             self.imm_emit8((imm));
         }
     }
     
-    pub fn shift_memindex_imm_size(&mut self, opc: u8, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, imm: i32, size: i32) {
+    pub fn shift_memindex_imm_size(&mut self, opc: ShiftOp, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, imm: i32, size: i32) {
         if ((imm) == 1) {
             if ((size) == 2) {
                 self.inst.push(0x66);
             }
             self.rex_emit((size), Reg::NONE, (indexreg), (basereg));
             self.opcode1_emit(0xd0, (size));
-            self.memindex_emit((opc), (basereg), (disp), (indexreg), (shift));
+            self.memindex_emit((opc.value()), (basereg), (disp), (indexreg), (shift));
         } else {
             if ((size) == 2) {
                 self.inst.push(0x66);
             }
             self.rex_emit((size), Reg::NONE, (indexreg), (basereg));
             self.opcode1_emit(0xc0, (size));
-            self.memindex_emit((opc), (basereg), (disp), (indexreg), (shift));
+            self.memindex_emit((opc.value()), (basereg), (disp), (indexreg), (shift));
             self.imm_emit8((imm));
         }
     }
@@ -1828,178 +1389,49 @@ impl Emit {
     /*
      * shift by the number of bits in %cl
      */
-    pub fn shift_reg_size(&mut self, opc: u8, dreg: Reg, size: i32) {
+    pub fn shift_reg_size(&mut self, opc: ShiftOp, dreg: Reg, size: i32) {
         if ((size) == 2) {
             self.inst.push(0x66);
         }
         self.rex_emit((size), Reg::NONE, Reg::NONE, (dreg));
         self.opcode1_emit(0xd2, (size));
-        self.reg_emit((opc), (dreg));
+        self.reg_emit((opc.value()), (dreg));
     }
     
-    pub fn shift_mem_size(&mut self, opc: u8, mem: i32, size: i32) {
+    pub fn shift_mem_size(&mut self, opc: ShiftOp, mem: i32, size: i32) {
         if ((size) == 2) {
             self.inst.push(0x66);
         }
         self.rex_emit((size), Reg::NONE, Reg::NONE, Reg::NONE);
         self.opcode1_emit(0xd2, (size));
-        self.mem_emit((opc), (mem));
+        self.mem_emit((opc.value()), (mem));
     }
     
-    pub fn shift_regp_size(&mut self, opc: u8, dregp: Reg, size: i32) {
+    pub fn shift_regp_size(&mut self, opc: ShiftOp, dregp: Reg, size: i32) {
         if ((size) == 2) {
             self.inst.push(0x66);
         }
         self.rex_emit((size), Reg::NONE, Reg::NONE, (dregp));
         self.opcode1_emit(0xd2, (size));
-        self.regp_emit((opc), (dregp));
+        self.regp_emit((opc.value()), (dregp));
     }
     
-    pub fn shift_membase_size(&mut self, opc: u8, basereg: Reg, disp: i32, size: i32) {
+    pub fn shift_membase_size(&mut self, opc: ShiftOp, basereg: Reg, disp: i32, size: i32) {
         if ((size) == 2) {
             self.inst.push(0x66);
         }
         self.rex_emit((size), Reg::NONE, Reg::NONE, (basereg));
         self.opcode1_emit(0xd2, (size));
-        self.membase_emit((opc), (basereg), (disp));
+        self.membase_emit((opc.value()), (basereg), (disp));
     }
     
-    pub fn shift_memindex_size(&mut self, opc: u8, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, size: i32) {
+    pub fn shift_memindex_size(&mut self, opc: ShiftOp, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, size: i32) {
         if ((size) == 2) {
             self.inst.push(0x66);
         }
         self.rex_emit((size), Reg::NONE, (indexreg), (basereg));
         self.opcode1_emit(0xd2, (size));
-        self.memindex_emit((opc), (basereg), (disp), (indexreg), (shift));
-    }
-    
-    /*
-     * shl: Shit left (clear the least significant bit)
-     */
-    pub fn shl_reg_imm_size(&mut self, dreg: Reg, imm: i32, size: i32) {
-        self.shift_reg_imm_size(4, (dreg), (imm), (size));
-    }
-    
-    pub fn shl_mem_imm_size(&mut self, mem: i32, imm: i32, size: i32) {
-        self.shift_mem_imm_size(4, (mem), (imm), (size));
-    }
-    
-    pub fn shl_regp_imm_size(&mut self, dregp: Reg, imm: i32, size: i32) {
-        self.shift_regp_imm_size(4, (dregp), (imm), (size));
-    }
-    
-    pub fn shl_membase_imm_size(&mut self, basereg: Reg, disp: i32, imm: i32, size: i32) {
-        self.shift_membase_imm_size(4, (basereg), (disp), (imm), (size));
-    }
-    
-    pub fn shl_memindex_imm_size(&mut self, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, imm: i32, size: i32) {
-        self.shift_memindex_imm_size(4, (basereg), (disp), (indexreg), (shift), (imm), (size));
-    }
-    
-    pub fn shl_reg_size(&mut self, dreg: Reg, size: i32) {
-        self.shift_reg_size(4, (dreg), (size));
-    }
-    
-    pub fn shl_mem_size(&mut self, mem: i32, size: i32) {
-        self.shift_mem_size(4, (mem), (size));
-    }
-    
-    pub fn shl_regp_size(&mut self, dregp: Reg, size: i32) {
-        self.shift_regp_size(4, (dregp), (size));
-    }
-    
-    pub fn shl_membase_size(&mut self, basereg: Reg, disp: i32, size: i32) {
-        self.shift_membase_size(4, (basereg), (disp), (size));
-    }
-    
-    pub fn shl_memindex_size(&mut self, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, size: i32) {
-        self.shift_memindex_size(4, (basereg), (disp), (indexreg), (shift), (size));
-    }
-    
-    /*
-     * shr: Unsigned shit right (clear the most significant bit)
-     */
-    pub fn shr_reg_imm_size(&mut self, dreg: Reg, imm: i32, size: i32) {
-        self.shift_reg_imm_size(5, (dreg), (imm), (size));
-    }
-    
-    pub fn shr_mem_imm_size(&mut self, mem: i32, imm: i32, size: i32) {
-        self.shift_mem_imm_size(5, (mem), (imm), (size));
-    }
-    
-    pub fn shr_regp_imm_size(&mut self, dregp: Reg, imm: i32, size: i32) {
-        self.shift_regp_imm_size(5, (dregp), (imm), (size));
-    }
-    
-    pub fn shr_membase_imm_size(&mut self, basereg: Reg, disp: i32, imm: i32, size: i32) {
-        self.shift_membase_imm_size(5, (basereg), (disp), (imm), (size));
-    }
-    
-    pub fn shr_memindex_imm_size(&mut self, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, imm: i32, size: i32) {
-        self.shift_memindex_imm_size(5, (basereg), (disp), (indexreg), (shift), (imm), (size));
-    }
-    
-    pub fn shr_reg_size(&mut self, dreg: Reg, size: i32) {
-        self.shift_reg_size(5, (dreg), (size));
-    }
-    
-    pub fn shr_mem_size(&mut self, mem: i32, size: i32) {
-        self.shift_mem_size(5, (mem), (size));
-    }
-    
-    pub fn shr_regp_size(&mut self, dregp: Reg, size: i32) {
-        self.shift_regp_size(5, (dregp), (size));
-    }
-    
-    pub fn shr_membase_size(&mut self, basereg: Reg, disp: i32, size: i32) {
-        self.shift_membase_size(5, (basereg), (disp), (size));
-    }
-    
-    pub fn shr_memindex_size(&mut self, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, size: i32) {
-        self.shift_memindex_size(5, (basereg), (disp), (indexreg), (shift), (size));
-    }
-    
-    /*
-     * sar: Signed shit right (keep the most significant bit)
-     */
-    pub fn sar_reg_imm_size(&mut self, dreg: Reg, imm: i32, size: i32) {
-        self.shift_reg_imm_size(7, (dreg), (imm), (size));
-    }
-    
-    pub fn sar_mem_imm_size(&mut self, mem: i32, imm: i32, size: i32) {
-        self.shift_mem_imm_size(7, (mem), (imm), (size));
-    }
-    
-    pub fn sar_regp_imm_size(&mut self, dregp: Reg, imm: i32, size: i32) {
-        self.shift_regp_imm_size(7, (dregp), (imm), (size));
-    }
-    
-    pub fn sar_membase_imm_size(&mut self, basereg: Reg, disp: i32, imm: i32, size: i32) {
-        self.shift_membase_imm_size(7, (basereg), (disp), (imm), (size));
-    }
-    
-    pub fn sar_memindex_imm_size(&mut self, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, imm: i32, size: i32) {
-        self.shift_memindex_imm_size(7, (basereg), (disp), (indexreg), (shift), (imm), (size));
-    }
-    
-    pub fn sar_reg_size(&mut self, dreg: Reg, size: i32) {
-        self.shift_reg_size(7, (dreg), (size));
-    }
-    
-    pub fn sar_mem_size(&mut self, mem: i32, size: i32) {
-        self.shift_mem_size(7, (mem), (size));
-    }
-    
-    pub fn sar_regp_size(&mut self, dregp: Reg, size: i32) {
-        self.shift_regp_size(7, (dregp), (size));
-    }
-    
-    pub fn sar_membase_size(&mut self, basereg: Reg, disp: i32, size: i32) {
-        self.shift_membase_size(7, (basereg), (disp), (size));
-    }
-    
-    pub fn sar_memindex_size(&mut self, basereg: Reg, disp: i32, indexreg: Reg, shift: u8, size: i32) {
-        self.shift_memindex_size(7, (basereg), (disp), (indexreg), (shift), (size));
+        self.memindex_emit((opc.value()), (basereg), (disp), (indexreg), (shift));
     }
     
     /*

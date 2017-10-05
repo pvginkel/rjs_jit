@@ -1,7 +1,7 @@
 mod emit;
 
 use codegen::JitFunction;
-use self::emit::Emit;
+use self::emit::{Emit, AluOp, ShiftOp};
 pub use self::emit::Reg;
 
 pub struct Codegen {
@@ -57,21 +57,98 @@ impl Codegen {
         }
     }
     
-    pub fn add<A1: AsArg, A2: AsArg>(&mut self, arg1: A1, arg2: A2) {
+    fn alu<A1: AsArg, A2: AsArg>(&mut self, opc: AluOp, arg1: A1, arg2: A2) {
         match (arg1.as_arg(), arg2.as_arg()) {
             (Arg::Reg(dreg), Arg::Reg(sreg)) => {
-                assert!(dreg.size() == sreg.size());
-                self.emit.add_reg_reg_size(dreg.reg(), sreg.reg(), dreg.size());
+                assert_eq!(dreg.size(), sreg.size());
+                self.emit.alu_reg_reg_size(opc, dreg.reg(), sreg.reg(), dreg.size());
             }
-            (Arg::MemBase(basereg, disp, _), Arg::Reg(sreg)) => self.emit.add_membase_reg_size(basereg, disp, sreg.reg(), sreg.size()),
-            (Arg::MemIndex(basereg, disp, indexreg, shift, _), Arg::Reg(sreg)) => self.emit.add_memindex_reg_size(basereg, disp, indexreg, shift, sreg.reg(), sreg.size()),
-            (Arg::Reg(dreg), Arg::Imm(imm)) => self.emit.add_reg_imm_size(dreg.reg(), imm.as_i32(), imm.size()),
-            (Arg::Reg(dreg), Arg::MemBase(basereg, disp, _)) => self.emit.add_reg_membase_size(dreg.reg(), basereg, disp, dreg.size()),
-            (Arg::Reg(dreg), Arg::MemIndex(basereg, disp, indexreg, shift, _)) => self.emit.add_reg_memindex_size(dreg.reg(), basereg, disp, indexreg, shift, dreg.size()),
-            (Arg::MemBase(basereg, disp, _), Arg::Imm(imm)) => self.emit.add_membase_imm_size(basereg, disp, imm.as_i32(), imm.size()),
-            (Arg::MemIndex(basereg, disp, indexreg, shift, _), Arg::Imm(imm)) => self.emit.add_memindex_imm_size(basereg, disp, indexreg, shift, imm.as_i32(), imm.size()),
+            (Arg::MemBase(basereg, disp, size), Arg::Reg(sreg)) => {
+                assert_eq!(size, sreg.size());
+                self.emit.alu_membase_reg_size(opc, basereg, disp, sreg.reg(), sreg.size());
+            }
+            (Arg::MemIndex(basereg, disp, indexreg, shift, size), Arg::Reg(sreg)) => {
+                assert_eq!(size, sreg.size());
+                self.emit.alu_memindex_reg_size(opc, basereg, disp, indexreg, shift, sreg.reg(), sreg.size());
+            }
+            (Arg::Reg(dreg), Arg::Imm(imm)) => {
+                assert_eq!(dreg.size(), imm.size());
+                self.emit.alu_reg_imm_size(opc, dreg.reg(), imm.as_i32(), imm.size());
+            }
+            (Arg::Reg(dreg), Arg::MemBase(basereg, disp, size)) => {
+                assert_eq!(dreg.size(), size);
+                self.emit.alu_reg_membase_size(opc, dreg.reg(), basereg, disp, dreg.size());
+            }
+            (Arg::Reg(dreg), Arg::MemIndex(basereg, disp, indexreg, shift, size)) => {
+                assert_eq!(dreg.size(), size);
+                self.emit.alu_reg_memindex_size(opc, dreg.reg(), basereg, disp, indexreg, shift, dreg.size());
+            }
+            (Arg::MemBase(basereg, disp, size), Arg::Imm(imm)) => {
+                assert_eq!(size, imm.size());
+                self.emit.alu_membase_imm_size(opc, basereg, disp, imm.as_i32(), imm.size());
+            }
+            (Arg::MemIndex(basereg, disp, indexreg, shift, size), Arg::Imm(imm)) => {
+                assert_eq!(size, imm.size());
+                self.emit.alu_memindex_imm_size(opc, basereg, disp, indexreg, shift, imm.as_i32(), imm.size());
+            }
             _ => jit_assert!()
         }
+    }
+    
+    pub fn add<A1: AsArg, A2: AsArg>(&mut self, arg1: A1, arg2: A2) {
+        self.alu(AluOp::Add, arg1, arg2);
+    }
+    
+    pub fn or<A1: AsArg, A2: AsArg>(&mut self, arg1: A1, arg2: A2) {
+        self.alu(AluOp::Or, arg1, arg2);
+    }
+    
+    pub fn adc<A1: AsArg, A2: AsArg>(&mut self, arg1: A1, arg2: A2) {
+        self.alu(AluOp::Adc, arg1, arg2);
+    }
+    
+    pub fn sbb<A1: AsArg, A2: AsArg>(&mut self, arg1: A1, arg2: A2) {
+        self.alu(AluOp::Sbb, arg1, arg2);
+    }
+    
+    pub fn and<A1: AsArg, A2: AsArg>(&mut self, arg1: A1, arg2: A2) {
+        self.alu(AluOp::And, arg1, arg2);
+    }
+    
+    pub fn sub<A1: AsArg, A2: AsArg>(&mut self, arg1: A1, arg2: A2) {
+        self.alu(AluOp::Sub, arg1, arg2);
+    }
+    
+    pub fn xor<A1: AsArg, A2: AsArg>(&mut self, arg1: A1, arg2: A2) {
+        self.alu(AluOp::XOr, arg1, arg2);
+    }
+    
+    pub fn cmp<A1: AsArg, A2: AsArg>(&mut self, arg1: A1, arg2: A2) {
+        self.alu(AluOp::Cmp, arg1, arg2);
+    }
+    
+    fn shift<A1: AsArg, A2: AsArg>(&mut self, opc: ShiftOp, arg1: A1, arg2: A2) {
+        match (arg1.as_arg(), arg2.as_arg()) {
+            (Arg::Reg(dreg), Arg::Imm(imm))
+                => self.emit.shift_reg_imm_size(opc, dreg.reg(), imm.as_i32(), dreg.size()),
+            (Arg::MemBase(basereg, disp, size), Arg::Imm(imm))
+                => self.emit.shift_membase_imm_size(opc, basereg, disp, imm.as_i32(), size),
+            (Arg::MemIndex(basereg, disp, indexreg, shift, size), Arg::Imm(imm))
+                => self.emit.shift_memindex_imm_size(opc, basereg, disp, indexreg, shift, imm.as_i32(), size),
+            _ => jit_assert!()
+        }
+    }
+    
+    fn shl<A1: AsArg, A2: AsArg>(&mut self, opc: ShiftOp, arg1: A1, arg2: A2) {
+        self.shift(ShiftOp::Shl, arg1, arg2);
+    }
+    
+    fn shr<A1: AsArg, A2: AsArg>(&mut self, opc: ShiftOp, arg1: A1, arg2: A2) {
+        self.shift(ShiftOp::Shr, arg1, arg2);
+    }
+    
+    fn sar<A1: AsArg, A2: AsArg>(&mut self, opc: ShiftOp, arg1: A1, arg2: A2) {
+        self.shift(ShiftOp::Sar, arg1, arg2);
     }
     
     pub fn call<A: AsArg>(&mut self, arg: A) {
@@ -80,23 +157,6 @@ impl Codegen {
             Arg::MemBase(basereg, disp, _) => self.emit.call_membase(basereg, disp),
             Arg::MemIndex(basereg, disp, indexreg, shift, _) => self.emit.call_memindex(basereg, disp, indexreg, shift),
             Arg::Reg(reg) => self.emit.call_reg(reg.reg()),
-            _ => jit_assert!()
-        }
-    }
-    
-    pub fn sub<A1: AsArg, A2: AsArg>(&mut self, arg1: A1, arg2: A2) {
-        match (arg1.as_arg(), arg2.as_arg()) {
-            (Arg::Reg(dreg), Arg::Reg(sreg)) => {
-                assert!(dreg.size() == sreg.size());
-                self.emit.sub_reg_reg_size(dreg.reg(), sreg.reg(), dreg.size());
-            }
-            (Arg::MemBase(basereg, disp, _), Arg::Reg(sreg)) => self.emit.sub_membase_reg_size(basereg, disp, sreg.reg(), sreg.size()),
-            (Arg::MemIndex(basereg, disp, indexreg, shift, _), Arg::Reg(sreg)) => self.emit.sub_memindex_reg_size(basereg, disp, indexreg, shift, sreg.reg(), sreg.size()),
-            (Arg::Reg(dreg), Arg::Imm(imm)) => self.emit.sub_reg_imm_size(dreg.reg(), imm.as_i32(), imm.size()),
-            (Arg::Reg(dreg), Arg::MemBase(basereg, disp, _)) => self.emit.sub_reg_membase_size(dreg.reg(), basereg, disp, dreg.size()),
-            (Arg::Reg(dreg), Arg::MemIndex(basereg, disp, indexreg, shift, _)) => self.emit.sub_reg_memindex_size(dreg.reg(), basereg, disp, indexreg, shift, dreg.size()),
-            (Arg::MemBase(basereg, disp, _), Arg::Imm(imm)) => self.emit.sub_membase_imm_size(basereg, disp, imm.as_i32(), imm.size()),
-            (Arg::MemIndex(basereg, disp, indexreg, shift, _), Arg::Imm(imm)) => self.emit.sub_memindex_imm_size(basereg, disp, indexreg, shift, imm.as_i32(), imm.size()),
             _ => jit_assert!()
         }
     }
@@ -252,6 +312,10 @@ pub mod prologue {
     pub use super::{Arg, AsArg, Imm, Codegen, Mem, MemSize, MemBase};
     pub use super::{MemIndex, Reg, SizedReg};
     pub use super::SizedReg::*;
+    
+    type M = Mem;
+    type MB = MemBase;
+    type MI = MemIndex;
 
     impl AsArg for Imm {
         fn as_arg(self) -> Arg {
